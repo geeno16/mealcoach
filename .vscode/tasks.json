@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "БД: Сбросить",
+      "type": "shell",
+      "command": "python -m src.common.dropdb_vstask",
+      "options": { "cwd": "/workspace/backend" },
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "shared",
+        "reveal": "always"
+      }
+    }
+  ]
+}
