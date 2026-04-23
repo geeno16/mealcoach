@@ -1,0 +1,32 @@
+API documentation:
+/api - general API prefix
+
+Routers: 
+/auth
+/users
+/posts
+
+Routes:
+GET /auth/{id: int}
+POST /auth/register
+POST /auth/login
+POST /auth/logout
+PUT /auth/{id: int}
+DELETE /auth/{id: int}
+
+GET /users/{id: int}
+GET /users/{id: int}/trainees
+GET /users/{id: int}/posts
+GET /users/{id: int}/avatar
+POST /users
+POST /users/{id: int}/avatar
+PATCH /users/{id: int}
+DELETE /users/{id: int}/avatar
+
+GET /posts/{id: int}
+GET /posts/{id: int}/picture
+POST /posts
+POST /posts/{id: int}/picture
+PATCH /posts/{id: int}
+DELETE /posts/{id: int}
+DELETE /posts/{id: int}/picture
