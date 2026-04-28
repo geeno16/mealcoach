@@ -1,4 +1,4 @@
-from .database import (
+from src.common.database import (
     Base,
     SessionDependency,
     create_database_if_not_exists,

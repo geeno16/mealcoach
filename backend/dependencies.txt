@@ -5,6 +5,7 @@ asyncpg==0.31.0
 python-dotenv==1.1.1
 passlib[bcrypt]==1.7.4
 pydantic==2.12.5
+pydantic[email]
 python-jose[cryptography]==3.3.0
 alembic==1.11.1
 
