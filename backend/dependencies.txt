@@ -5,11 +5,12 @@ asyncpg==0.31.0
 python-dotenv==1.1.1
 passlib[bcrypt]==1.7.4
 pydantic==2.12.5
-pydantic[email]
+pydantic[email]==2.12.5
 python-jose[cryptography]==3.3.0
 alembic==1.11.1
 
 pytest==8.3.1
+pytest-asyncio==0.21.0
 httpx==0.25.0
 ruff==0.15.2
 ty==0.0.32
