@@ -7,12 +7,10 @@ Routers:
 /posts
 
 Routes:
-GET /auth/{id: int}
 POST /auth/register
 POST /auth/login
 POST /auth/logout
 PUT /auth/{id: int}
-DELETE /auth/{id: int}
 
 GET /users/{id: int}
 GET /users/{id: int}/trainees
@@ -21,6 +19,7 @@ GET /users/{id: int}/avatar
 POST /users
 POST /users/{id: int}/avatar
 PATCH /users/{id: int}
+DELETE /users/{id: int}
 DELETE /users/{id: int}/avatar
 
 GET /posts/{id: int}
