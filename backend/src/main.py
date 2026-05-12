@@ -3,10 +3,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.auth.route import auth_router
+from src.auth import auth_router
 from src.common import create_database_if_not_exists, create_tables
-
-app = FastAPI(title="Mealcoach API")
 
 
 @asynccontextmanager
@@ -16,5 +14,5 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
 
-app = FastAPI(title="Meald API", lifespan=lifespan)
+app = FastAPI(title="Mealcoach API", lifespan=lifespan)
 app.include_router(auth_router)
