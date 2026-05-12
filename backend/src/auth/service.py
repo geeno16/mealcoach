@@ -11,39 +11,36 @@ class AuthService:
         self.repo = AuthRepository(session)
 
     async def register_post(self, data: AuthWrite) -> int:
-        if await self.__email_exists(data.email):
+        existing = await self.repo.get_by_email(data.email)
+
+        if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"User with email={data.email} already exists",
             )
 
-        try:
-            id = await self.repo.create(data)
-        except AttributeError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-            ) from e
-
-        return id
+        auth = await self.repo.create(data)
+        return auth.id
 
     async def login_post(
         self, data: AuthWrite, response: Response
     ) -> AuthRead:
-        valid = True
-        if not await self.__email_exists(data.email):
-            valid = False
-
         auth = await self.repo.get_by_email(data.email)
-        if not await self.repo.verify_password(auth.id, data.password):
-            valid = False
 
-        if not valid:
+        if not auth:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect login or password",
+            )
+
+        if not await self.repo.verify_password(auth, data.password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect login or password",
             )
 
         token = create_access_token({"user_id": auth.id})
+
         response.set_cookie(
             key="access_token",
             value=token,
@@ -52,7 +49,7 @@ class AuthService:
             samesite="lax",
         )
 
-        return auth
+        return AuthRead.model_validate(auth)
 
     async def logout_post(self, response: Response) -> dict:
         response.delete_cookie(
@@ -68,23 +65,15 @@ class AuthService:
         if id != current.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can update only youself",
+                detail="You can update only yourself",
             )
 
-        try:
-            auth = await self.repo.update_by_id(id, data)
-        except AttributeError as e:
+        auth = await self.repo.update_by_id(id, data)
+
+        if not auth:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-            ) from e
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
 
-        return auth
-
-    async def __email_exists(self, email: str) -> bool:
-        exists = True
-        try:
-            await self.repo.get_by_email(email)
-        except KeyError:
-            exists = False
-
-        return exists
+        return AuthRead.model_validate(auth)

@@ -25,5 +25,17 @@
         "group": "servers"
       }
     },
+    {
+      "label": "Тесты: Запустить",
+      "type": "shell",
+      "command": "pytest",
+      "options": { "cwd": "/workspace/backend" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
   ]
 }
