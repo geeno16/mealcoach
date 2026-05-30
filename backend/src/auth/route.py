@@ -9,7 +9,7 @@ from src.auth.schema import AuthRead, AuthWrite
 auth_router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 
-@auth_router.post("/register", status_code=status.HTTP_201_CREATED)
+@auth_router.post("", status_code=status.HTTP_201_CREATED)
 async def register_post(
     data: AuthWrite, service: AuthServiceDependency
 ) -> int:

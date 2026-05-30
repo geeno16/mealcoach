@@ -48,3 +48,14 @@ class AuthRepository:
 
     async def verify_password(self, auth: Auth, password: str) -> bool:
         return auth.password == password
+
+    async def delete_by_id(self, id: int) -> bool:
+        auth = await self.get_by_id(id)
+
+        if not auth:
+            return False
+
+        await self.session.delete(auth)
+        await self.session.commit()
+
+        return True

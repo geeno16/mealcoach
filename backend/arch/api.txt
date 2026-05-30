@@ -7,17 +7,18 @@ Routers:
 /posts
 
 Routes:
-POST /auth/register         || input schema: AuthWrite, output schema: int
-POST /auth/login            || input schema: AuthWrite, output schema: AuthRead
-POST /auth/logout           || input schema: None, output schema: dict
-PUT /auth/{id: int}         || input schema: AuthWrite, output schema: AuthRead
+POST /auth                      || input schema: AuthWrite, output schema: int
+POST /auth/login                || input schema: AuthWrite, output schema: AuthRead
+POST /auth/logout               || input schema: None, output schema: dict
+PUT /auth/{id: int}             || input schema: AuthWrite, output schema: AuthRead
 
-GET /users/{id: int}
-POST /users
-PUT /users/{id: int}
-DELETE /users/{id: int}
+GET /users/{id: int}            || input schema: int, output schema: UserRead
+POST /users                     || input schema: UserWrite, output schema: UserRead
+PUT /users/{id: int}            || input schema: UserWrite, output schema: UserRead
+DELETE /users/{id: int}         || input schema: int, output schema: None
 
 GET /posts/{id: int}
+GET /posts/all/{auth_id: int}
 POST /posts
 PUT /posts/{id: int}
 DELETE /posts/{id: int}
