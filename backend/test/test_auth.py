@@ -6,7 +6,7 @@ basic_password = "1816bg123Qaz"
 
 async def create_account(email: str, password: str, async_client):
     return await async_client.post(
-        "/api/auth/register",
+        "/api/auth",
         json={
             "email": email,
             "password": password,
@@ -37,22 +37,18 @@ async def test_register_post_positive(async_client):
 @pytest.mark.asyncio
 async def test_register_post_negative(async_client):
     await create_account(basic_email, basic_password, async_client)
-    duplicated_email_response = await create_account(
+    response = await create_account(
         basic_email, basic_password, async_client
     )
-    assert duplicated_email_response.status_code == 400
+    assert response.status_code == 400
 
-    bad_email_response = await create_account(
+    response = await create_account(
         "test", basic_password, async_client
     )
-    bad_pass_response = await create_account(
-        basic_email, "test", async_client
-    )
-    assert (
-        bad_email_response.status_code
-        == bad_pass_response.status_code
-        == 422
-    )
+    assert response.status_code == 422
+
+    response = await create_account(basic_email, "test", async_client)
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio

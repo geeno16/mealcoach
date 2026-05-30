@@ -1,3 +1,6 @@
+[tool.pytest.ini_options]
+filterwarnings = ["ignore"]
+
 [tool.ruff]
 line-length = 72
 target-version = "py312"

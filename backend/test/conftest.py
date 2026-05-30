@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from src import app
-from src.common import engine, get_session
+from src.common import create_tables, engine, get_session
 
 
 @pytest.fixture(scope="session")
@@ -17,6 +17,12 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def setup_tables():
+    await create_tables()
+    await engine.dispose()
 
 
 @pytest_asyncio.fixture
