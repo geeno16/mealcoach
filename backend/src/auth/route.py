@@ -38,3 +38,12 @@ async def update_auth_post(
     current: CurrentAuthDependency,
 ):
     return await service.update_auth_put(id, data, current)
+
+
+@auth_router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_auth_delete(
+    id: int,
+    service: AuthServiceDependency,
+    current: CurrentAuthDependency,
+) -> None:
+    await service.delete_auth_delete(id, current)

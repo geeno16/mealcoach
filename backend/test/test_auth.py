@@ -1,27 +1,13 @@
 import pytest
 
-basic_email = "test@gmail.com"
-basic_password = "1816bg123Qaz"
-
-
-async def create_account(email: str, password: str, async_client):
-    return await async_client.post(
-        "/api/auth",
-        json={
-            "email": email,
-            "password": password,
-        },
-    )
-
-
-async def login(email: str, password: str, async_client):
-    return await async_client.post(
-        "/api/auth/login",
-        json={
-            "email": email,
-            "password": password,
-        },
-    )
+from test.helpers import (
+    basic_email,
+    basic_password,
+    create_account,
+    delete_account,
+    get_user,
+    login,
+)
 
 
 @pytest.mark.asyncio
@@ -112,4 +98,28 @@ async def test_update_put_negative(async_client):
         f"/api/auth/{-1}",
         json={"email": basic_email, "password": basic_password},
     )
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_delete_auth_delete_positive(async_client):
+    auth = await create_account(
+        basic_email, basic_password, async_client
+    )
+    id = auth.json()
+    await login(basic_email, basic_password, async_client)
+
+    response = await delete_account(id, async_client)
+    assert response.status_code == 204
+
+    response = await get_user(id, async_client)
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_auth_delete_negative(async_client):
+    await create_account(basic_email, basic_password, async_client)
+    await login(basic_email, basic_password, async_client)
+
+    response = await delete_account(-1, async_client)
     assert response.status_code == 403

@@ -15,7 +15,7 @@ class User(Base):
     __tablename__ = "user"
 
     auth_id: Mapped[int] = mapped_column(
-        ForeignKey("auth.id"), primary_key=True, autoincrement=False
+        ForeignKey("auth.id", ondelete="CASCADE"), primary_key=True, autoincrement=False
     )
     coach_id: Mapped[int | None] = mapped_column(
         ForeignKey("user.auth_id"), nullable=True

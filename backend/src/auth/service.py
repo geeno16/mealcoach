@@ -77,3 +77,20 @@ class AuthService:
             )
 
         return AuthRead.model_validate(auth)
+
+    async def delete_auth_delete(
+        self, id: int, current: CurrentAuth
+    ) -> None:
+        if id != current.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can delete only yourself",
+            )
+
+        deleted = await self.repo.delete_by_id(id)
+
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )

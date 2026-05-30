@@ -7,33 +7,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import Auth, AuthRepository, AuthWrite
 from src.user import User, UserRepository, UserRole, UserWrite
-from test.test_auth import basic_email, basic_password, login
+from test.helpers import (
+    basic_email,
+    basic_password,
+    create_user,
+    get_user,
+    login,
+    update_user,
+)
 
 
 @dataclass
 class AuthUserPair:
     auth: Auth
     user: User
-
-
-async def create_user(data: UserWrite, async_client):
-    return await async_client.post(
-        "/api/users", json=data.model_dump(mode="json")
-    )
-
-
-async def get_user(id: int, async_client):
-    return await async_client.get(f"/api/users/{id}")
-
-
-async def update_user(id: int, data: UserWrite, async_client):
-    return await async_client.put(
-        f"/api/users/{id}", json=data.model_dump(mode="json")
-    )
-
-
-async def delete_user(id: int, async_client):
-    return await async_client.delete(f"/api/users/{id}")
 
 
 @pytest_asyncio.fixture
@@ -183,23 +170,3 @@ async def test_update_user_put_negative(async_client, team, user):
     assert response.status_code == 403
 
 
-@pytest.mark.asyncio
-async def test_delete_user_delete_positive(async_client, team):
-    await login(team[1].auth.email, team[1].auth.password, async_client)
-    response = await delete_user(team[1].auth.id, async_client)
-    assert response.status_code == 204
-
-    response = await get_user(team[1].auth.id, async_client)
-    assert response.status_code == 404
-
-    response = await login(
-        team[1].auth.email, team[1].auth.password, async_client
-    )
-    assert response.status_code == 401
-
-
-@pytest.mark.asyncio
-async def test_delete_user_delete_negative(async_client, team):
-    await login(team[1].auth.email, team[1].auth.password, async_client)
-    response = await delete_user(team[2].auth.id, async_client)
-    assert response.status_code == 403

@@ -1,7 +1,6 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.repository import AuthRepository
 from src.auth.schema import CurrentAuth
 from src.user.model import UserRole
 from src.user.repository import UserRepository
@@ -11,7 +10,6 @@ from src.user.schema import UserRead, UserWrite
 class UserService:
     def __init__(self, session: AsyncSession):
         self.repo = UserRepository(session)
-        self.auth_repo = AuthRepository(session)
 
     async def get_user_get(
         self, auth_id: int, current: CurrentAuth
@@ -88,21 +86,3 @@ class UserService:
 
         return UserRead.model_validate(user)
 
-    async def delete_user_delete(
-        self, auth_id: int, current: CurrentAuth
-    ) -> None:
-        if auth_id != current.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can delete only yourself",
-            )
-
-        deleted = await self.repo.delete_by_id(auth_id)
-
-        if not deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
-
-        await self.auth_repo.delete_by_id(auth_id)

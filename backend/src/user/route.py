@@ -37,10 +37,3 @@ async def update_user_put(
     return await service.update_user_put(id, data, current)
 
 
-@user_router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user_delete(
-    id: int,
-    service: UserServiceDependency,
-    current: CurrentAuthDependency,
-) -> None:
-    await service.delete_user_delete(id, current)
