@@ -59,14 +59,17 @@ class AuthService:
         )
         return {"message": "Logged out"}
 
-    async def update_auth_put(
-        self, id: int, data: AuthWrite, current: CurrentAuth
-    ) -> AuthRead:
+    def _assert_owner(self, id: int, current: CurrentAuth) -> None:
         if id != current.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can update only yourself",
+                detail="You can modify only yourself",
             )
+
+    async def update_auth_put(
+        self, id: int, data: AuthWrite, current: CurrentAuth
+    ) -> AuthRead:
+        self._assert_owner(id, current)
 
         auth = await self.repo.update_by_id(id, data)
 
@@ -81,11 +84,7 @@ class AuthService:
     async def delete_auth_delete(
         self, id: int, current: CurrentAuth
     ) -> None:
-        if id != current.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can delete only yourself",
-            )
+        self._assert_owner(id, current)
 
         deleted = await self.repo.delete_by_id(id)
 

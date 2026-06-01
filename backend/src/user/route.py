@@ -7,6 +7,15 @@ from src.user.schema import UserRead, UserWrite
 user_router = APIRouter(prefix="/api/users", tags=["Users"])
 
 
+@user_router.get("/all/{coach_id}", response_model=list[UserRead])
+async def get_trainees_get(
+    coach_id: int,
+    service: UserServiceDependency,
+    current: CurrentAuthDependency,
+) -> list[UserRead]:
+    return await service.get_trainees_get(coach_id, current)
+
+
 @user_router.get("/{id}", response_model=UserRead)
 async def get_user_get(
     id: int,

@@ -1,3 +1,5 @@
+from sqlalchemy import select
+
 from src.common import BaseRepository
 from src.user.model import User
 from src.user.schema import UserWrite
@@ -5,6 +7,12 @@ from src.user.schema import UserWrite
 
 class UserRepository(BaseRepository[User, UserWrite]):
     model = User
+
+    async def get_all_by_coach_id(self, coach_id: int) -> list[User]:
+        result = await self.session.execute(
+            select(User).where(User.coach_id == coach_id)
+        )
+        return list(result.scalars().all())
 
     async def update_by_id(
         self, id: int, data: UserWrite
