@@ -14,14 +14,15 @@ PUT /auth/{id: int}             || input schema: AuthWrite, output schema: AuthR
 DELETE /auth/{id: int}          || input schema: None, output schema: None
 
 GET /users/{id: int}            || input schema: int, output schema: UserRead
+GET /users/all/{coach_id: int}  || input schema: int, output schema: [UserRead]
 POST /users                     || input schema: UserWrite, output schema: UserRead
 PUT /users/{id: int}            || input schema: UserWrite, output schema: UserRead
 
-GET /posts/{id: int}
-GET /posts/all/{auth_id: int}
-POST /posts
-PUT /posts/{id: int}
-DELETE /posts/{id: int}
+GET /posts/{id: int}            || input schema: int, output schema: PostRead
+GET /posts/all/{auth_id: int}   || input schema: int, output schema: [PostRead]
+POST /posts                     || input schema: PostWrite, output schema: PostRead
+PUT /posts/{id: int}            || input schema: PostWrite, output schema: PostRead
+DELETE /posts/{id: int}         || input schema: int, output schema: None
 
 GET /picture/{id: int}
 POST /picture
