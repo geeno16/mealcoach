@@ -26,6 +26,19 @@
       }
     },
     {
+      "label": "Frontend: Запустить",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": { "cwd": "/workspace/frontend" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always",
+        "group": "servers"
+      }
+    },
+    {
       "label": "Тесты: Запустить",
       "type": "shell",
       "command": "pytest",
@@ -36,6 +49,6 @@
         "panel": "dedicated",
         "reveal": "always"
       }
-    },
+    }
   ]
 }

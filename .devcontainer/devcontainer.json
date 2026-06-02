@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.base.schema.json",
   "name": "Mealcoach",
   "dockerComposeFile": ["../docker-compose.yaml"],
-  "service": "backend",
+  "service": "app",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
   "customizations": {
@@ -12,7 +12,10 @@
         "charliermarsh.ruff",
         "astral-sh.ty",
         "usernamehw.errorlens",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "editorconfig.editorconfig"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -31,7 +34,8 @@
         "files.watcherExclude": {
           "**/__pycache__/**": true,
           "**/.pytest_cache/**": true,
-          "**/.ruff_cache/**": true
+          "**/.ruff_cache/**": true,
+          "**/node_modules/**": true
         },
         "python.defaultInterpreterPath": "/opt/venv/bin/python",
         "python.languageServer": "None",
@@ -49,8 +53,41 @@
         "search.exclude": {
           "**/__pycache__": true,
           "**/.pytest_cache": true,
-          "**/.ruff_cache": true
-        }
+          "**/.ruff_cache": true,
+          "**/node_modules": true
+        },
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        },
+        "[typescriptreact]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        },
+        "[css]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "editor.tabSize": 2
+        },
+        "eslint.validate": [
+          "javascript",
+          "typescript",
+          "typescriptreact"
+        ],
+        "eslint.workingDirectories": [
+          { "directory": "/workspace/frontend", "changeProcessCWD": true }
+        ],
+        "eslint.options": {
+          "overrideConfigFile": "/workspace/frontend/settings/eslint.config.cjs"
+        },
+        "prettier.configPath": "/workspace/frontend/settings/prettier.config.cjs"
       }
     }
   }
