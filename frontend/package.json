@@ -7,10 +7,12 @@
     "build": "tsc --noEmit && vite build --config settings/vite.config.ts",
     "preview": "vite preview --config settings/vite.config.ts",
     "lint": "eslint . --config settings/eslint.config.cjs",
-    "format": "prettier --write . --config settings/prettier.config.cjs"
+    "format": "prettier --write . --config settings/prettier.config.cjs",
+    "gen:api": "openapi-typescript http://localhost:8000/openapi.json -o src/api/schema.gen.ts"
   },
   "dependencies": {
     "mobx": "^6.13.7",
+    "openapi-fetch": "^0.13.0",
     "mobx-react-lite": "^4.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
@@ -31,6 +33,7 @@
     "prettier": "^3.5.3",
     "prettier-plugin-css-order": "^2.1.2",
     "typescript": "^5.8.3",
+    "openapi-typescript": "^7.8.0",
     "typescript-eslint": "^8.33.1",
     "vite": "^6.3.5"
   }

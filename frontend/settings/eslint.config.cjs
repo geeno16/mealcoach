@@ -78,7 +78,7 @@ const config = [
       "@typescript-eslint": tseslint.plugin,
     },
     rules: {
-      "@typescript-eslint/consistent-type-imports": "warn",
+      "@typescript-eslint/consistent-type-imports": ["warn", { fixStyle: "inline-type-imports" }],
       "no-unused-vars": "off",
       "no-use-before-define": "off",
       "@typescript-eslint/no-use-before-define": "warn",
@@ -91,9 +91,9 @@ const config = [
   importPlugin.flatConfigs.typescript,
   {
     rules: {
-      "sort-imports": ["warn", { ignoreDeclarationSort: true }],
+      "sort-imports": "off",
       "import-x/no-duplicates": "warn",
-      "import-x/consistent-type-specifier-style": ["warn", "prefer-top-level"],
+      "import-x/consistent-type-specifier-style": ["warn", "prefer-inline"],
       "import-x/first": "warn",
       "import-x/newline-after-import": "warn",
       "import-x/no-unresolved": "off",
@@ -108,7 +108,7 @@ const config = [
             "sibling",
             "index",
           ],
-          alphabetize: { order: "asc", orderImportKind: "desc" },
+          alphabetize: { order: "asc", orderImportKind: "ignore" },
           "newlines-between": "always",
           distinctGroup: false,
           pathGroupsExcludedImportTypes: ["builtin"],

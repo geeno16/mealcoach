@@ -1,8 +1,6 @@
-import { createContext, useContext } from "react";
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 
-import { rootStore } from "./RootStore";
-import type { RootStore } from "./RootStore";
+import { rootStore, type RootStore } from "./RootStore";
 
 const StoreContext = createContext<RootStore>(rootStore);
 
