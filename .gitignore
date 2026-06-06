@@ -4,3 +4,7 @@
 .ruff_cache/
 __pycache__/
 *.pyc
+frontend/node_modules/
+frontend/dist/
+frontend/package-lock.json
+frontend/src/api/schema.gen.ts

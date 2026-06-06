@@ -26,6 +26,30 @@
       }
     },
     {
+      "label": "Frontend: Запустить",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": { "cwd": "/workspace/frontend" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always",
+        "group": "servers"
+      }
+    },
+    {
+      "label": "API: Сгенерировать типы",
+      "type": "shell",
+      "command": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 & UVICORN_PID=$! && echo 'Ожидание бэка...' && until curl -s http://localhost:8000/openapi.json > /dev/null; do sleep 1; done && echo 'Бэк готов, генерирую типы...' && npm run gen:api --prefix /workspace/frontend && kill $UVICORN_PID && echo 'Готово.'",
+      "options": { "cwd": "/workspace/backend" },
+      "problemMatcher": [],
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
       "label": "Тесты: Запустить",
       "type": "shell",
       "command": "pytest",
@@ -36,6 +60,6 @@
         "panel": "dedicated",
         "reveal": "always"
       }
-    },
+    }
   ]
 }
