@@ -27,6 +27,7 @@ PUT /posts/{id: int}            || input schema: PostWrite, output schema: PostR
 DELETE /posts/{id: int}         || input schema: int, output schema: None
 
 GET /picture/{id: int}
+GET /picture/all/{post_id: int}
 POST /picture
 PUT /picture/{id: int}
 DELETE /picture/{id: int}

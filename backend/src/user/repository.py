@@ -8,6 +8,12 @@ from src.user.schema import UserWrite
 class UserRepository(BaseRepository[User, UserWrite]):
     model = User
 
+    async def get_by_picture_id(self, picture_id: int) -> User | None:
+        result = await self.session.execute(
+            select(User).where(User.picture_id == picture_id)
+        )
+        return result.scalar_one_or_none()
+
     async def get_all_by_coach_id(self, coach_id: int) -> list[User]:
         result = await self.session.execute(
             select(User).where(User.coach_id == coach_id)
