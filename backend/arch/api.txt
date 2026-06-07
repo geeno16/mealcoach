@@ -1,4 +1,6 @@
 API documentation:
+
+DN - common domen name
 /api - general API prefix
 
 Routers: 

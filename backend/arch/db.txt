@@ -1,3 +1,5 @@
+DATABASE documentation:
+
 AUTH
     id: int                     (PK)
     email: str                  (not null, unique)

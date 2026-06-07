@@ -1,0 +1,22 @@
+NAVIGATION documentation:
+
+DN - common domen name
+
+Prefix:
+no prefix - landing
+/app - application
+
+Landing entrypoints:
+/                               (unauthorized)
+
+Application entrypoints:
+/app/signup                     (unauthorized)
+/app/login                      (unauthorized)
+/app/profile                    (authorized)
+
+/app/posts                      (authorized)
+/app/stats                      (authorized)
+
+/app/trainees                   (authorized)
+/app/trainee/{auth_id}/posts    (authorized)
+/app/trainee/{auth_id}/stats    (authorized)
