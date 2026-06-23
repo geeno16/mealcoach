@@ -28,7 +28,7 @@
     {
       "label": "Frontend: запустить dev сервер",
       "type": "shell",
-      "command": "npm run dev",
+      "command": "curl -sf http://localhost:8000/openapi.json > /dev/null 2>&1 || { echo 'Бэк не запущен на http://localhost:8000 — сначала запустите задачу «Backend: запустить dev сервер»'; exit 1; }; npm run gen:api && npm run dev",
       "options": { "cwd": "/workspace/frontend" },
       "isBackground": true,
       "problemMatcher": [],
@@ -39,14 +39,16 @@
       }
     },
     {
-      "label": "Frontend: обновить типы",
+      "label": "Prod: собрать и запустить",
       "type": "shell",
-      "command": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 & UVICORN_PID=$! && echo 'Ожидание бэка...' && until curl -s http://localhost:8000/openapi.json > /dev/null; do sleep 1; done && echo 'Бэк готов, генерирую типы...' && npm run gen:api --prefix /workspace/frontend && kill $UVICORN_PID && echo 'Готово.'",
+      "command": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 & UVICORN_PID=$! && until curl -sf http://localhost:8000/openapi.json > /dev/null; do sleep 1; done && (cd /workspace/frontend && npm run gen:api && npm run build) && kill $UVICORN_PID && python -m uvicorn src.main:app --host 0.0.0.0 --port 8000",
       "options": { "cwd": "/workspace/backend" },
+      "isBackground": true,
       "problemMatcher": [],
       "presentation": {
         "panel": "dedicated",
-        "reveal": "always"
+        "reveal": "always",
+        "group": "servers"
       }
     },
     {
