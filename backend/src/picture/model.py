@@ -11,7 +11,7 @@ class Picture(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     post_id: Mapped[int | None] = mapped_column(
-        ForeignKey("post.id"), nullable=True
+        ForeignKey("post.id", ondelete="CASCADE"), nullable=True
     )
     data: Mapped[bytes] = mapped_column(nullable=False)
 

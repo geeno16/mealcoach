@@ -4,16 +4,20 @@ from src.auth.dependency import (
     AuthServiceDependency,
     CurrentAuthDependency,
 )
-from src.auth.schema import AuthRead, AuthWrite
+from src.auth.schema import AuthRead, AuthWrite, MessageResponse
 
 auth_router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 
-@auth_router.post("", status_code=status.HTTP_201_CREATED)
+@auth_router.post(
+    "", status_code=status.HTTP_201_CREATED, response_model=AuthRead
+)
 async def register_post(
-    data: AuthWrite, service: AuthServiceDependency
-) -> int:
-    return await service.register_post(data)
+    data: AuthWrite, service: AuthServiceDependency, response: Response
+) -> AuthRead:
+    auth = await service.register_post(data)
+    response.headers["Location"] = f"/api/auth/{auth.id}"
+    return auth
 
 
 @auth_router.post("/login", response_model=AuthRead)
@@ -23,10 +27,10 @@ async def login_post(
     return await service.login_post(data, response)
 
 
-@auth_router.post("/logout")
+@auth_router.post("/logout", response_model=MessageResponse)
 async def logout_post(
     service: AuthServiceDependency, response: Response
-) -> dict:
+) -> MessageResponse:
     return await service.logout_post(response)
 
 

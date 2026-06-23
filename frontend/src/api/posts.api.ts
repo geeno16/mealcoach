@@ -13,8 +13,8 @@ export const postsApi = {
   },
 
   async getAllByAuth(authId: number): Promise<PostRead[]> {
-    const { data: result } = await apiClient.GET("/api/posts/all/{auth_id}", {
-      params: { path: { auth_id: authId } },
+    const { data: result } = await apiClient.GET("/api/posts", {
+      params: { query: { auth_id: authId } },
     });
     return result!;
   },

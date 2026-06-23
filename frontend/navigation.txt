@@ -12,6 +12,7 @@ Landing entrypoints:
 Application entrypoints:
 /app/signup                     (unauthorized)
 /app/login                      (unauthorized)
+/app/fork                       (authorized)
 /app/profile                    (authorized)
 
 /app/posts                      (authorized)

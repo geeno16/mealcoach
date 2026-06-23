@@ -5,7 +5,7 @@ export type AuthWrite = components["schemas"]["AuthWrite"];
 export type AuthRead = components["schemas"]["AuthRead"];
 
 export const authApi = {
-  async register(data: AuthWrite): Promise<number> {
+  async register(data: AuthWrite): Promise<AuthRead> {
     const { data: result } = await apiClient.POST("/api/auth", { body: data });
     return result!;
   },

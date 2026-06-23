@@ -13,7 +13,7 @@
       }
     },
     {
-      "label": "Backend: Запустить",
+      "label": "Backend: запустить dev сервер",
       "type": "shell",
       "command": "python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
       "options": { "cwd": "/workspace/backend" },
@@ -26,7 +26,7 @@
       }
     },
     {
-      "label": "Frontend: Запустить",
+      "label": "Frontend: запустить dev сервер",
       "type": "shell",
       "command": "npm run dev",
       "options": { "cwd": "/workspace/frontend" },
@@ -39,7 +39,7 @@
       }
     },
     {
-      "label": "API: Сгенерировать типы",
+      "label": "Frontend: обновить типы",
       "type": "shell",
       "command": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 & UVICORN_PID=$! && echo 'Ожидание бэка...' && until curl -s http://localhost:8000/openapi.json > /dev/null; do sleep 1; done && echo 'Бэк готов, генерирую типы...' && npm run gen:api --prefix /workspace/frontend && kill $UVICORN_PID && echo 'Готово.'",
       "options": { "cwd": "/workspace/backend" },
@@ -50,7 +50,7 @@
       }
     },
     {
-      "label": "Тесты: Запустить",
+      "label": "Backend: запустить тесты",
       "type": "shell",
       "command": "pytest",
       "options": { "cwd": "/workspace/backend" },

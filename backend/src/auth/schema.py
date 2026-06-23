@@ -35,6 +35,10 @@ class AuthRead(AuthBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MessageResponse(BaseModel):
+    message: str
+
+
 @dataclass(frozen=True)
 class CurrentAuth:
     id: int

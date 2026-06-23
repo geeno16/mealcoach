@@ -3,30 +3,33 @@ API documentation:
 DN - common domen name
 /api - general API prefix
 
-Routers: 
+Routers:
 /auth
 /users
 /posts
+/pictures
 
 Routes:
-POST /auth                      || input schema: AuthWrite, output schema: int
-POST /auth/login                || input schema: AuthWrite, output schema: AuthRead
-POST /auth/logout               || input schema: None, output schema: dict
-PUT /auth/{id: int}             || input schema: AuthWrite, output schema: AuthRead
-DELETE /auth/{id: int}          || input schema: None, output schema: None
+POST /auth                                                  || input schema: AuthWrite, output schema: AuthRead
+POST /auth/login                                            || input schema: AuthWrite, output schema: AuthRead
+POST /auth/logout                                           || input schema: None, output schema: MessageResponse
+PUT /auth/{id: int}                                         || input schema: AuthWrite, output schema: AuthRead
+DELETE /auth/{id: int}                                      || input schema: None, output schema: None
 
-GET /users/{id: int}            || input schema: int, output schema: UserRead
-GET /users/all/{coach_id: int}  || input schema: int, output schema: [UserRead]
-POST /users                     || input schema: UserWrite, output schema: UserRead
-PUT /users/{id: int}            || input schema: UserWrite, output schema: UserRead
+GET /users/{id: int}                                        || input schema: int, output schema: UserRead
+GET /users?coach_id={coach_id: int}                         || input schema: int, output schema: [UserRead]
+POST /users                                                 || input schema: UserWrite, output schema: UserRead
+PUT /users/{id: int}                                        || input schema: UserWrite, output schema: UserRead
 
-GET /posts/{id: int}            || input schema: int, output schema: PostRead
-GET /posts/all/{auth_id: int}   || input schema: int, output schema: [PostRead]
-POST /posts                     || input schema: PostWrite, output schema: PostRead
-PUT /posts/{id: int}            || input schema: PostWrite, output schema: PostRead
-DELETE /posts/{id: int}         || input schema: int, output schema: None
+GET /posts/{id: int}                                        || input schema: int, output schema: PostRead
+GET /posts?auth_id={auth_id: int}                           || input schema: int, output schema: [PostRead]
+POST /posts                                                 || input schema: PostWrite, output schema: PostRead
+PUT /posts/{id: int}                                        || input schema: PostWrite, output schema: PostRead
+DELETE /posts/{id: int}                                     || input schema: int, output schema: None
 
-GET /picture/{id: int}
-POST /picture
-PUT /picture/{id: int}
-DELETE /picture/{id: int}
+GET /pictures/{id: int}                                     || output: image/jpeg
+GET /posts/{post_id: int}/pictures                          || output schema: [int]
+POST /posts/{post_id: int}/pictures                         || input: image/jpeg, output schema: PictureRead
+PUT /users/{user_id: int}/avatar                            || input: image/jpeg, output schema: PictureRead
+PUT /pictures/{id: int}                                     || input: image/jpeg, output schema: None
+DELETE /pictures/{id: int}                                  || input schema: None, output schema: None
