@@ -42,7 +42,7 @@ async def test_login_post_positive(async_client):
     auth = await create_account(
         basic_email, basic_password, async_client
     )
-    id = auth.json()
+    id = auth.json()["id"]
     response = await login(basic_email, basic_password, async_client)
     assert response.json()["id"] == id
 
@@ -61,7 +61,7 @@ async def test_logout_post(async_client):
     auth = await create_account(
         basic_email, basic_password, async_client
     )
-    id = auth.json()
+    id = auth.json()["id"]
     response = await login(basic_email, basic_password, async_client)
     assert response.json()["id"] == id
 
@@ -79,7 +79,7 @@ async def test_update_put_positive(async_client):
     auth = await create_account(
         basic_email, basic_password, async_client
     )
-    id = auth.json()
+    id = auth.json()["id"]
     await login(basic_email, basic_password, async_client)
     response = await async_client.put(
         f"/api/auth/{id}",
@@ -106,7 +106,7 @@ async def test_delete_auth_delete_positive(async_client):
     auth = await create_account(
         basic_email, basic_password, async_client
     )
-    id = auth.json()
+    id = auth.json()["id"]
     await login(basic_email, basic_password, async_client)
 
     response = await delete_account(id, async_client)

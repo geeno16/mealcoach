@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Response, status
 
 from src.auth.dependency import CurrentAuthDependency
 from src.post.dependency import PostServiceDependency
@@ -7,7 +7,7 @@ from src.post.schema import PostRead, PostWrite
 post_router = APIRouter(prefix="/api/posts", tags=["Posts"])
 
 
-@post_router.get("/all/{auth_id}", response_model=list[PostRead])
+@post_router.get("", response_model=list[PostRead])
 async def get_all_posts_get(
     auth_id: int,
     service: PostServiceDependency,
@@ -32,8 +32,11 @@ async def create_post_post(
     data: PostWrite,
     service: PostServiceDependency,
     current: CurrentAuthDependency,
+    response: Response,
 ) -> PostRead:
-    return await service.create_post_post(data, current)
+    post = await service.create_post_post(data, current)
+    response.headers["Location"] = f"/api/posts/{post.id}"
+    return post
 
 
 @post_router.put("/{id}", response_model=PostRead)

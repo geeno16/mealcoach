@@ -14,8 +14,8 @@ export const usersApi = {
   },
 
   async getAllByCoach(coachId: number): Promise<UserRead[]> {
-    const { data: result } = await apiClient.GET("/api/users/all/{coach_id}", {
-      params: { path: { coach_id: coachId } },
+    const { data: result } = await apiClient.GET("/api/users", {
+      params: { query: { coach_id: coachId } },
     });
     return result!;
   },

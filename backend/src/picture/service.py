@@ -5,8 +5,9 @@ from src.auth.schema import CurrentAuth
 from src.picture.model import Picture
 from src.picture.repository import PictureRepository
 from src.picture.schema import PictureWrite
+from src.post.model import Post
 from src.post.repository import PostRepository
-from src.user.model import UserRole
+from src.user.model import User, UserRole
 from src.user.repository import UserRepository
 from src.user.schema import UserWrite
 
@@ -28,15 +29,33 @@ class PictureService:
             )
         return picture
 
-    async def _assert_avatar_read_access(
-        self, picture_id: int, current: CurrentAuth
-    ) -> None:
+    async def _get_post_or_404(self, post_id: int) -> Post:
+        post = await self.post_repo.get_by_id(post_id)
+        if not post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Post not found",
+            )
+        return post
+
+    async def _get_avatar_owner_or_404(self, picture_id: int) -> User:
         owner = await self.user_repo.get_by_picture_id(picture_id)
         if not owner:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Picture owner not found",
             )
+        return owner
+
+    def _forbidden(self) -> HTTPException:
+        return HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied",
+        )
+
+    async def _assert_avatar_read_access(
+        self, owner: User, current: CurrentAuth
+    ) -> None:
         if owner.auth_id == current.id:
             return
         current_user = await self.user_repo.get_by_id(current.id)
@@ -46,164 +65,108 @@ class PictureService:
             and owner.coach_id == current.id
         ):
             return
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied",
-        )
+        raise self._forbidden()
 
-    async def _assert_post_picture_read_access(
-        self, post_auth_id: int, current: CurrentAuth
+    async def _assert_post_read_access(
+        self, post: Post, current: CurrentAuth
     ) -> None:
-        if post_auth_id == current.id:
+        if post.auth_id == current.id:
             return
         current_user = await self.user_repo.get_by_id(current.id)
         if current_user and current_user.role == UserRole.coach:
-            owner = await self.user_repo.get_by_id(post_auth_id)
+            owner = await self.user_repo.get_by_id(post.auth_id)
             if owner and owner.coach_id == current.id:
                 return
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied",
-        )
-
-    async def create_picture_post(
-        self, data: PictureWrite, current: CurrentAuth
-    ) -> int:
-        current_user = await self.user_repo.get_by_id(current.id)
-        if not current_user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
-            )
-
-        if data.post_id is None:
-            picture = await self.repo.create(data)
-            current_user.picture_id = picture.id
-            await self.user_repo.update_by_id(
-                current.id, UserWrite.model_validate(current_user)
-            )
-            return picture.id
-
-        if current_user.role != UserRole.trainee:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only trainees can upload post pictures",
-            )
-        post = await self.post_repo.get_by_id(data.post_id)
-        if not post:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Post not found",
-            )
-        if post.auth_id != current.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only upload pictures for your own posts",
-            )
-        count = await self.repo.count_by_post_id(data.post_id)
-        if count >= MAX_POST_PICTURES:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"A post cannot have more than {MAX_POST_PICTURES} pictures",
-            )
-        picture = await self.repo.create(data)
-        return picture.id
+        raise self._forbidden()
 
     async def get_picture_get(
         self, id: int, current: CurrentAuth
     ) -> bytes:
         picture = await self._get_picture_or_404(id)
         if picture.post_id is None:
-            await self._assert_avatar_read_access(id, current)
+            owner = await self._get_avatar_owner_or_404(id)
+            await self._assert_avatar_read_access(owner, current)
         else:
-            post = await self.post_repo.get_by_id(picture.post_id)
-            if not post:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Post not found",
-                )
-            await self._assert_post_picture_read_access(
-                post.auth_id, current
-            )
+            post = await self._get_post_or_404(picture.post_id)
+            await self._assert_post_read_access(post, current)
         return picture.data
 
-    async def get_all_pictures_get(
+    async def get_post_pictures_get(
         self, post_id: int, current: CurrentAuth
     ) -> list[int]:
-        post = await self.post_repo.get_by_id(post_id)
-        if not post:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Post not found",
-            )
-        await self._assert_post_picture_read_access(
-            post.auth_id, current
-        )
+        post = await self._get_post_or_404(post_id)
+        await self._assert_post_read_access(post, current)
         pictures = await self.repo.get_all_by_post_id(post_id)
         return [p.id for p in pictures]
 
+    async def set_avatar(
+        self, user_id: int, data: bytes, current: CurrentAuth
+    ) -> Picture:
+        if user_id != current.id:
+            raise self._forbidden()
+        current_user = await self.user_repo.get_by_id(current.id)
+        if not current_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+        old_picture_id = current_user.picture_id
+        picture = await self.repo.create(PictureWrite(data=data))
+        current_user.picture_id = picture.id
+        await self.user_repo.update_by_id(
+            current.id,
+            UserWrite.model_validate(current_user, from_attributes=True),
+        )
+        if old_picture_id is not None:
+            await self.repo.delete_by_id(old_picture_id)
+        return picture
+
+    async def create_post_picture(
+        self, post_id: int, data: bytes, current: CurrentAuth
+    ) -> Picture:
+        post = await self._get_post_or_404(post_id)
+        if post.auth_id != current.id:
+            raise self._forbidden()
+        count = await self.repo.count_by_post_id(post_id)
+        if count >= MAX_POST_PICTURES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A post cannot have more than {MAX_POST_PICTURES} pictures",
+            )
+        picture = await self.repo.create(
+            PictureWrite(data=data, post_id=post_id)
+        )
+        return picture
+
+    async def _assert_write_access(
+        self, picture: Picture, current: CurrentAuth
+    ) -> None:
+        if picture.post_id is None:
+            owner = await self._get_avatar_owner_or_404(picture.id)
+            if owner.auth_id != current.id:
+                raise self._forbidden()
+        else:
+            post = await self._get_post_or_404(picture.post_id)
+            if post.auth_id != current.id:
+                raise self._forbidden()
+
     async def update_picture_put(
-        self, id: int, data: PictureWrite, current: CurrentAuth
+        self, id: int, data: bytes, current: CurrentAuth
     ) -> None:
         picture = await self._get_picture_or_404(id)
-        if picture.post_id is None:
-            owner = await self.user_repo.get_by_picture_id(id)
-            if not owner or owner.auth_id != current.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You can only update your own avatar",
-                )
-        else:
-            current_user = await self.user_repo.get_by_id(current.id)
-            if not current_user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found",
-                )
-            if current_user.role != UserRole.trainee:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Only trainees can update post pictures",
-                )
-            post = await self.post_repo.get_by_id(picture.post_id)
-            if not post or post.auth_id != current.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You can only update pictures for your own posts",
-                )
-        await self.repo.update_by_id(id, data)
+        await self._assert_write_access(picture, current)
+        await self.repo.update_by_id(id, PictureWrite(data=data))
 
     async def delete_picture_delete(
         self, id: int, current: CurrentAuth
     ) -> None:
         picture = await self._get_picture_or_404(id)
+        await self._assert_write_access(picture, current)
         if picture.post_id is None:
-            owner = await self.user_repo.get_by_picture_id(id)
-            if not owner or owner.auth_id != current.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You can only delete your own avatar",
-                )
+            owner = await self._get_avatar_owner_or_404(id)
             owner.picture_id = None
             await self.user_repo.update_by_id(
-                owner.auth_id, UserWrite.model_validate(owner)
+                owner.auth_id,
+                UserWrite.model_validate(owner, from_attributes=True),
             )
-        else:
-            current_user = await self.user_repo.get_by_id(current.id)
-            if not current_user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found",
-                )
-            if current_user.role != UserRole.trainee:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Only trainees can delete post pictures",
-                )
-            post = await self.post_repo.get_by_id(picture.post_id)
-            if not post or post.auth_id != current.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You can only delete pictures for your own posts",
-                )
         await self.repo.delete_by_id(id)

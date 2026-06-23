@@ -8,7 +8,7 @@
     "preview": "vite preview --config settings/vite.config.ts",
     "lint": "eslint . --config settings/eslint.config.cjs",
     "format": "prettier --write . --config settings/prettier.config.cjs",
-    "gen:api": "openapi-typescript http://localhost:8000/openapi.json -o src/api/schema.gen.ts"
+    "gen:api": "node settings/gen-api.mjs && prettier --write src/api/schema.gen.ts --config settings/prettier.config.cjs"
   },
   "dependencies": {
     "mobx": "^6.13.7",

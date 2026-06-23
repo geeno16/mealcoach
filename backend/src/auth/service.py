@@ -2,15 +2,21 @@ from fastapi import HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.repository import AuthRepository
-from src.auth.schema import AuthRead, AuthWrite, CurrentAuth
+from src.auth.schema import (
+    AuthRead,
+    AuthWrite,
+    CurrentAuth,
+    MessageResponse,
+)
 from src.auth.token import create_access_token
 
 
 class AuthService:
     def __init__(self, session: AsyncSession):
+        self.session = session
         self.repo = AuthRepository(session)
 
-    async def register_post(self, data: AuthWrite) -> int:
+    async def register_post(self, data: AuthWrite) -> AuthRead:
         existing = await self.repo.get_by_email(data.email)
 
         if existing:
@@ -20,7 +26,7 @@ class AuthService:
             )
 
         auth = await self.repo.create(data)
-        return auth.id
+        return AuthRead.model_validate(auth)
 
     async def login_post(
         self, data: AuthWrite, response: Response
@@ -51,13 +57,13 @@ class AuthService:
 
         return AuthRead.model_validate(auth)
 
-    async def logout_post(self, response: Response) -> dict:
+    async def logout_post(self, response: Response) -> MessageResponse:
         response.delete_cookie(
             key="access_token",
             path="/",
             samesite="lax",
         )
-        return {"message": "Logged out"}
+        return MessageResponse(message="Logged out")
 
     def _assert_owner(self, id: int, current: CurrentAuth) -> None:
         if id != current.id:
@@ -86,6 +92,14 @@ class AuthService:
     ) -> None:
         self._assert_owner(id, current)
 
+        # Imported lazily: auth is imported first at startup, so a
+        # module-level import here would create a circular import.
+        from src.picture.repository import PictureRepository
+        from src.user.repository import UserRepository
+
+        user = await UserRepository(self.session).get_by_id(id)
+        picture_id = user.picture_id if user else None
+
         deleted = await self.repo.delete_by_id(id)
 
         if not deleted:
@@ -93,3 +107,6 @@ class AuthService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found",
             )
+
+        if picture_id is not None:
+            await PictureRepository(self.session).delete_by_id(picture_id)

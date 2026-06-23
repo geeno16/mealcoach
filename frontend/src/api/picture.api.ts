@@ -1,49 +1,60 @@
-import { ApiError } from "./client";
+import { apiClient } from "./client";
+import { type components } from "./schema.gen";
 
-export interface PictureRead {
-  id: number;
-  post_id: number | null;
-  updated_at: string;
-  created_at: string;
-}
-
-async function handleBinaryResponse(response: Response): Promise<Blob> {
-  if (!response.ok) {
-    throw new ApiError(response.status, response.statusText);
-  }
-  return response.blob();
-}
-
-async function handleJsonResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    throw new ApiError(response.status, response.statusText);
-  }
-  return response.json() as Promise<T>;
-}
+export type PictureRead = components["schemas"]["PictureRead"];
 
 export const pictureApi = {
-  getPicture(id: number): Promise<Blob> {
-    return fetch(`/api/picture/${id}`).then(handleBinaryResponse);
+  async getPicture(id: number): Promise<Blob> {
+    const { data: result } = await apiClient.GET("/api/pictures/{id}", {
+      params: { path: { id } },
+      parseAs: "blob",
+    });
+    return result!;
   },
 
-  uploadPicture(formData: FormData): Promise<PictureRead> {
-    return fetch("/api/picture", { method: "POST", body: formData }).then(
-      (res) => handleJsonResponse<PictureRead>(res),
-    );
-  },
-
-  updatePicture(id: number, formData: FormData): Promise<PictureRead> {
-    return fetch(`/api/picture/${id}`, {
-      method: "PUT",
-      body: formData,
-    }).then((res) => handleJsonResponse<PictureRead>(res));
-  },
-
-  deletePicture(id: number): Promise<void> {
-    return fetch(`/api/picture/${id}`, { method: "DELETE" }).then(
-      async (res) => {
-        if (!res.ok) throw new ApiError(res.status, res.statusText);
+  async getPostPictures(postId: number): Promise<number[]> {
+    const { data: result } = await apiClient.GET(
+      "/api/posts/{post_id}/pictures",
+      {
+        params: { path: { post_id: postId } },
       },
     );
+    return result!;
+  },
+
+  async createPostPicture(postId: number, data: Blob): Promise<PictureRead> {
+    const { data: result } = await apiClient.POST(
+      "/api/posts/{post_id}/pictures",
+      {
+        params: { path: { post_id: postId } },
+        body: data,
+        bodySerializer: (body) => body,
+      },
+    );
+    return result!;
+  },
+
+  async setAvatar(userId: number, data: Blob): Promise<PictureRead> {
+    const { data: result } = await apiClient.PUT(
+      "/api/users/{user_id}/avatar",
+      {
+        params: { path: { user_id: userId } },
+        body: data,
+        bodySerializer: (body) => body,
+      },
+    );
+    return result!;
+  },
+
+  async updatePicture(id: number, data: Blob): Promise<void> {
+    await apiClient.PUT("/api/pictures/{id}", {
+      params: { path: { id } },
+      body: data,
+      bodySerializer: (body) => body,
+    });
+  },
+
+  async deletePicture(id: number): Promise<void> {
+    await apiClient.DELETE("/api/pictures/{id}", { params: { path: { id } } });
   },
 };

@@ -1,22 +1,27 @@
-from fastapi import APIRouter, Form, Response, UploadFile, status
+from typing import Annotated
+
+from fastapi import APIRouter, Body, Response, status
 
 from src.auth.dependency import CurrentAuthDependency
 from src.picture.dependency import PictureServiceDependency
-from src.picture.schema import PictureWrite
+from src.picture.schema import PictureRead
 
-picture_router = APIRouter(prefix="/api/picture", tags=["Picture"])
+picture_router = APIRouter(prefix="/api", tags=["Picture"])
 
-
-@picture_router.get("/all/{post_id}", response_model=list[int])
-async def get_all_pictures_get(
-    post_id: int,
-    service: PictureServiceDependency,
-    current: CurrentAuthDependency,
-) -> list[int]:
-    return await service.get_all_pictures_get(post_id, current)
+JpegBody = Annotated[bytes, Body(media_type="image/jpeg")]
 
 
-@picture_router.get("/{id}")
+@picture_router.get(
+    "/pictures/{id}",
+    response_class=Response,
+    responses={
+        200: {
+            "content": {
+                "image/jpeg": {"schema": {"type": "string", "format": "binary"}}
+            }
+        }
+    },
+)
 async def get_picture_get(
     id: int,
     service: PictureServiceDependency,
@@ -26,31 +31,60 @@ async def get_picture_get(
     return Response(content=data, media_type="image/jpeg")
 
 
-@picture_router.post(
-    "", status_code=status.HTTP_201_CREATED, response_model=int
-)
-async def create_picture_post(
-    file: UploadFile,
+@picture_router.get("/posts/{post_id}/pictures", response_model=list[int])
+async def get_post_pictures_get(
+    post_id: int,
     service: PictureServiceDependency,
     current: CurrentAuthDependency,
-    post_id: int | None = Form(None),
-) -> int:
-    data = PictureWrite(data=await file.read(), post_id=post_id)
-    return await service.create_picture_post(data, current)
+) -> list[int]:
+    return await service.get_post_pictures_get(post_id, current)
 
 
-@picture_router.put("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@picture_router.post(
+    "/posts/{post_id}/pictures",
+    status_code=status.HTTP_201_CREATED,
+    response_model=PictureRead,
+)
+async def create_post_picture_post(
+    post_id: int,
+    data: JpegBody,
+    service: PictureServiceDependency,
+    current: CurrentAuthDependency,
+    response: Response,
+) -> PictureRead:
+    picture = await service.create_post_picture(post_id, data, current)
+    response.headers["Location"] = f"/api/pictures/{picture.id}"
+    return PictureRead.model_validate(picture)
+
+
+@picture_router.put("/users/{user_id}/avatar", response_model=PictureRead)
+async def set_avatar_put(
+    user_id: int,
+    data: JpegBody,
+    service: PictureServiceDependency,
+    current: CurrentAuthDependency,
+    response: Response,
+) -> PictureRead:
+    picture = await service.set_avatar(user_id, data, current)
+    response.headers["Location"] = f"/api/pictures/{picture.id}"
+    return PictureRead.model_validate(picture)
+
+
+@picture_router.put(
+    "/pictures/{id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def update_picture_put(
     id: int,
-    file: UploadFile,
+    data: JpegBody,
     service: PictureServiceDependency,
     current: CurrentAuthDependency,
 ) -> None:
-    data = PictureWrite(data=await file.read())
     await service.update_picture_put(id, data, current)
 
 
-@picture_router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@picture_router.delete(
+    "/pictures/{id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_picture_delete(
     id: int,
     service: PictureServiceDependency,
