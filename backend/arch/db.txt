@@ -3,7 +3,8 @@ DATABASE documentation:
 AUTH
     id: int                     (PK)
     email: str                  (not null, unique)
-    password: str               (not null)
+    password: str               (not null, hashed)
+    is_verified: bool           (not null, default false)
     updated_at: datetime        (not null, auto)
     created_at: datetime        (not null, auto)
 
@@ -35,3 +36,12 @@ PICTURE
     data: bytes                 (not null)
     updated_at: datetime        (not null, auto)
     created_at: datetime        (not null, auto)
+
+EMAIL_CODE
+    id: int                     (PK)
+    auth_id: int                (FK auth 1 - n email_code, not null, cascade)
+    code_hash: str              (not null)
+    expires_at: datetime        (not null, tz-aware)
+    attempts: int               (not null, default 0)
+    used: bool                  (not null, default false)
+    created_at: datetime        (not null, auto, tz-aware)

@@ -1,20 +1,55 @@
+import os
+import secrets
+from datetime import UTC, datetime, timedelta
+
 from fastapi import HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth.model import Auth
 from src.auth.repository import AuthRepository
 from src.auth.schema import (
     AuthRead,
     AuthWrite,
     CurrentAuth,
+    EmailVerify,
     MessageResponse,
 )
 from src.auth.token import create_access_token
+from src.common import hash_secret, verify_secret
+from src.email_code.repository import EmailCodeRepository
+from src.email_code.schema import EmailCodeWrite
+from src.mailer import sender
+
+_CODE_TTL = timedelta(
+    seconds=int(os.getenv("EMAIL_CODE_TTL_SECONDS", "600"))
+)
+_MAX_ATTEMPTS = int(os.getenv("EMAIL_CODE_MAX_ATTEMPTS", "5"))
+_RESEND_COOLDOWN = timedelta(
+    seconds=int(os.getenv("EMAIL_CODE_RESEND_COOLDOWN_SECONDS", "60"))
+)
+
+
+def _generate_code() -> str:
+    return f"{secrets.randbelow(1_000_000):06d}"
 
 
 class AuthService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repo = AuthRepository(session)
+        self.code_repo = EmailCodeRepository(session)
+
+    async def _issue_code(self, auth: Auth) -> None:
+        await self.code_repo.delete_by_auth_id(auth.id)
+        code = _generate_code()
+        await self.code_repo.create(
+            EmailCodeWrite(
+                auth_id=auth.id,
+                code_hash=hash_secret(code),
+                expires_at=datetime.now(UTC) + _CODE_TTL,
+            )
+        )
+        await sender.send_verification_code(auth.email, code)
 
     async def register_post(self, data: AuthWrite) -> AuthRead:
         existing = await self.repo.get_by_email(data.email)
@@ -26,6 +61,97 @@ class AuthService:
             )
 
         auth = await self.repo.create(data)
+
+        try:
+            await self._issue_code(auth)
+        except Exception as exc:
+            await self.repo.delete_by_id(auth.id)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not send verification email",
+            ) from exc
+
+        return AuthRead.model_validate(auth)
+
+    async def resend_code_post(
+        self, data: AuthWrite
+    ) -> MessageResponse:
+        auth = await self.repo.get_by_email(data.email)
+        if not auth or not await self.repo.verify_password(
+            auth, data.password
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect login or password",
+            )
+
+        if auth.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is already verified",
+            )
+
+        active = await self.code_repo.get_active_by_auth_id(auth.id)
+        if (
+            active
+            and active.expires_at > datetime.now(UTC)
+            and datetime.now(UTC) - active.created_at < _RESEND_COOLDOWN
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Please wait before requesting a new code",
+            )
+
+        try:
+            await self._issue_code(auth)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not send verification email",
+            ) from exc
+
+        return MessageResponse(message="Code sent")
+
+    async def verify_email_post(self, data: EmailVerify) -> AuthRead:
+        auth = await self.repo.get_by_email(data.email)
+        if not auth:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Code is invalid or expired",
+            )
+
+        if auth.is_verified:
+            return AuthRead.model_validate(auth)
+
+        code = await self.code_repo.get_active_by_auth_id(auth.id)
+        if (
+            not code
+            or code.used
+            or code.expires_at < datetime.now(UTC)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Code is invalid or expired",
+            )
+
+        if code.attempts >= _MAX_ATTEMPTS:
+            await self.code_repo.mark_used(code)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Too many attempts, request a new code",
+            )
+
+        if not verify_secret(data.code, code.code_hash):
+            await self.code_repo.increment_attempts(code)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect code",
+            )
+
+        auth.is_verified = True
+        await self.code_repo.mark_used(code)
+        await self.session.refresh(auth)
+
         return AuthRead.model_validate(auth)
 
     async def login_post(
@@ -33,20 +159,21 @@ class AuthService:
     ) -> AuthRead:
         auth = await self.repo.get_by_email(data.email)
 
-        if not auth:
+        if not auth or not await self.repo.verify_password(
+            auth, data.password
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect login or password",
             )
 
-        if not await self.repo.verify_password(auth, data.password):
+        if not auth.is_verified:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect login or password",
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Email is not verified",
             )
 
         token = create_access_token({"user_id": auth.id})
-
         response.set_cookie(
             key="access_token",
             value=token,
@@ -92,8 +219,6 @@ class AuthService:
     ) -> None:
         self._assert_owner(id, current)
 
-        # Imported lazily: auth is imported first at startup, so a
-        # module-level import here would create a circular import.
         from src.picture.repository import PictureRepository
         from src.user.repository import UserRepository
 

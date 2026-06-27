@@ -7,6 +7,7 @@ from test.helpers import (
     delete_account,
     get_user,
     login,
+    verify_email,
 )
 
 
@@ -17,7 +18,7 @@ async def test_register_post_positive(async_client):
     )
 
     assert response.status_code == 201
-    assert response.json()
+    assert response.json()["is_verified"] is False
 
 
 @pytest.mark.asyncio
@@ -43,6 +44,7 @@ async def test_login_post_positive(async_client):
         basic_email, basic_password, async_client
     )
     id = auth.json()["id"]
+    await verify_email(basic_email, async_client)
     response = await login(basic_email, basic_password, async_client)
     assert response.json()["id"] == id
 
@@ -57,11 +59,19 @@ async def test_login_post_negative(async_client):
 
 
 @pytest.mark.asyncio
+async def test_login_unverified_forbidden(async_client):
+    await create_account(basic_email, basic_password, async_client)
+    response = await login(basic_email, basic_password, async_client)
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_logout_post(async_client):
     auth = await create_account(
         basic_email, basic_password, async_client
     )
     id = auth.json()["id"]
+    await verify_email(basic_email, async_client)
     response = await login(basic_email, basic_password, async_client)
     assert response.json()["id"] == id
 
@@ -80,6 +90,7 @@ async def test_update_put_positive(async_client):
         basic_email, basic_password, async_client
     )
     id = auth.json()["id"]
+    await verify_email(basic_email, async_client)
     await login(basic_email, basic_password, async_client)
     response = await async_client.put(
         f"/api/auth/{id}",
@@ -92,6 +103,7 @@ async def test_update_put_positive(async_client):
 @pytest.mark.asyncio
 async def test_update_put_negative(async_client):
     await create_account(basic_email, basic_password, async_client)
+    await verify_email(basic_email, async_client)
     await login(basic_email, basic_password, async_client)
 
     response = await async_client.put(
@@ -107,6 +119,7 @@ async def test_delete_auth_delete_positive(async_client):
         basic_email, basic_password, async_client
     )
     id = auth.json()["id"]
+    await verify_email(basic_email, async_client)
     await login(basic_email, basic_password, async_client)
 
     response = await delete_account(id, async_client)
@@ -119,6 +132,7 @@ async def test_delete_auth_delete_positive(async_client):
 @pytest.mark.asyncio
 async def test_delete_auth_delete_negative(async_client):
     await create_account(basic_email, basic_password, async_client)
+    await verify_email(basic_email, async_client)
     await login(basic_email, basic_password, async_client)
 
     response = await delete_account(-1, async_client)

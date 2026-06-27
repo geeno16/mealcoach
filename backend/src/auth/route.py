@@ -4,7 +4,12 @@ from src.auth.dependency import (
     AuthServiceDependency,
     CurrentAuthDependency,
 )
-from src.auth.schema import AuthRead, AuthWrite, MessageResponse
+from src.auth.schema import (
+    AuthRead,
+    AuthWrite,
+    EmailVerify,
+    MessageResponse,
+)
 
 auth_router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
@@ -18,6 +23,20 @@ async def register_post(
     auth = await service.register_post(data)
     response.headers["Location"] = f"/api/auth/{auth.id}"
     return auth
+
+
+@auth_router.post("/verify-email", response_model=AuthRead)
+async def verify_email_post(
+    data: EmailVerify, service: AuthServiceDependency
+) -> AuthRead:
+    return await service.verify_email_post(data)
+
+
+@auth_router.post("/resend-code", response_model=MessageResponse)
+async def resend_code_post(
+    data: AuthWrite, service: AuthServiceDependency
+) -> MessageResponse:
+    return await service.resend_code_post(data)
 
 
 @auth_router.post("/login", response_model=AuthRead)

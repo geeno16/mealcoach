@@ -29,6 +29,7 @@ class AuthWrite(AuthBase):
 
 class AuthRead(AuthBase):
     id: int
+    is_verified: bool
     updated_at: datetime
     created_at: datetime
 
@@ -37,6 +38,10 @@ class AuthRead(AuthBase):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+class EmailVerify(AuthBase):
+    code: str = Field(min_length=6, max_length=6)
 
 
 @dataclass(frozen=True)

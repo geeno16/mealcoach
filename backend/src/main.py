@@ -2,16 +2,18 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, HTTPException, status
+from fastapi.responses import FileResponse
 
 from src.auth import auth_router
 from src.common import create_database_if_not_exists, create_tables
+from src.email_code import EmailCode  # noqa: F401
 from src.picture import Picture, picture_router  # noqa: F401
 from src.post import Post, post_router  # noqa: F401
 from src.user import User, user_router  # noqa: F401
 
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+FRONTEND_INDEX = FRONTEND_DIST / "index.html"
 
 
 @asynccontextmanager
@@ -27,12 +29,15 @@ app.include_router(user_router)
 app.include_router(post_router)
 app.include_router(picture_router)
 
-# Раздача собранного фронта (prod). Монтируется последним, после всех
-# API-роутеров, и только если фронт собран — иначе dev/тесты падали бы на
-# отсутствующей директории dist. html=True даёт SPA-fallback на index.html.
 if FRONTEND_DIST.is_dir():
-    app.mount(
-        "/",
-        StaticFiles(directory=FRONTEND_DIST, html=True),
-        name="static",
-    )
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str) -> FileResponse:
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+        candidate = (FRONTEND_DIST / full_path).resolve()
+        if candidate.is_file() and FRONTEND_DIST in candidate.parents:
+            return FileResponse(candidate)
+
+        return FileResponse(FRONTEND_INDEX)

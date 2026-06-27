@@ -30,6 +30,21 @@ async def setup_tables():
     await engine.dispose()
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def captured_codes(monkeypatch):
+    from test import helpers
+
+    helpers._sent_codes.clear()
+
+    async def fake_send(email: str, code: str) -> None:
+        helpers._sent_codes[email] = code
+
+    monkeypatch.setattr(
+        "src.mailer.sender.send_verification_code", fake_send
+    )
+    yield helpers._sent_codes
+
+
 @pytest_asyncio.fixture
 async def db_session():
     async with engine.connect() as connection:
@@ -66,15 +81,22 @@ async def async_client(db_session: AsyncSession):
     app.dependency_overrides.clear()
 
 
+async def _create_auth(
+    db_session: AsyncSession, email: str, password: str
+) -> Auth:
+    auth = await AuthRepository(db_session).create(
+        AuthWrite(email=email, password=password)
+    )
+    auth.is_verified = True
+    await db_session.commit()
+    auth.password = password
+    db_session.expunge(auth)
+    return auth
+
+
 @pytest_asyncio.fixture
 async def auth(db_session: AsyncSession) -> AsyncGenerator[Auth, None]:
-    repo = AuthRepository(db_session)
-
-    auth = await repo.create(
-        AuthWrite(email=basic_email, password=basic_password)
-    )
-
-    yield auth
+    yield await _create_auth(db_session, basic_email, basic_password)
 
 
 @pytest_asyncio.fixture
@@ -96,14 +118,11 @@ class AuthUserPair:
 async def team(
     db_session: AsyncSession,
 ) -> AsyncGenerator[list[AuthUserPair], None]:
-    auth_repo = AuthRepository(db_session)
     user_repo = UserRepository(db_session)
 
     coach_auth_list = [
-        await auth_repo.create(
-            AuthWrite(
-                email=f"coach{i}@test.com", password=basic_password
-            )
+        await _create_auth(
+            db_session, f"coach{i}@test.com", basic_password
         )
         for i in range(2)
     ]
@@ -123,10 +142,8 @@ async def team(
     ]
 
     for i in range(3):
-        trainee_auth = await auth_repo.create(
-            AuthWrite(
-                email=f"trainee{i}@test.com", password=basic_password
-            )
+        trainee_auth = await _create_auth(
+            db_session, f"trainee{i}@test.com", basic_password
         )
         trainee_user = await user_repo.create(
             UserWrite(

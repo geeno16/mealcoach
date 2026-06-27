@@ -3,11 +3,23 @@ import { type components } from "./schema.gen";
 
 export type AuthWrite = components["schemas"]["AuthWrite"];
 export type AuthRead = components["schemas"]["AuthRead"];
+export type EmailVerify = components["schemas"]["EmailVerify"];
 
 export const authApi = {
   async register(data: AuthWrite): Promise<AuthRead> {
     const { data: result } = await apiClient.POST("/api/auth", { body: data });
     return result!;
+  },
+
+  async verifyEmail(data: EmailVerify): Promise<AuthRead> {
+    const { data: result } = await apiClient.POST("/api/auth/verify-email", {
+      body: data,
+    });
+    return result!;
+  },
+
+  async resendCode(data: AuthWrite): Promise<void> {
+    await apiClient.POST("/api/auth/resend-code", { body: data });
   },
 
   async login(data: AuthWrite): Promise<AuthRead> {
