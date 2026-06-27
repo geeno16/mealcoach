@@ -15,6 +15,21 @@ async def create_account(email: str, password: str, async_client):
     )
 
 
+_sent_codes: dict[str, str] = {}
+
+
+async def verify_email(email: str, async_client, code: str | None = None):
+    if code is None:
+        code = _sent_codes[email]
+    return await async_client.post(
+        "/api/auth/verify-email",
+        json={
+            "email": email,
+            "code": code,
+        },
+    )
+
+
 async def login(email: str, password: str, async_client):
     return await async_client.post(
         "/api/auth/login",
@@ -23,6 +38,21 @@ async def login(email: str, password: str, async_client):
             "password": password,
         },
     )
+
+
+async def resend_code(email: str, password: str, async_client):
+    return await async_client.post(
+        "/api/auth/resend-code",
+        json={
+            "email": email,
+            "password": password,
+        },
+    )
+
+
+async def signup(email: str, password: str, async_client):
+    await create_account(email, password, async_client)
+    return await verify_email(email, async_client)
 
 
 async def delete_account(id: int, async_client):

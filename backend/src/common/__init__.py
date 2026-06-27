@@ -8,6 +8,7 @@ from src.common.database import (
     engine,
     get_session,
 )
+from src.common.hashing import hash_secret, verify_secret
 
 __all__ = [
     "Base",
@@ -18,4 +19,6 @@ __all__ = [
     "drop_database",
     "engine",
     "get_session",
+    "hash_secret",
+    "verify_secret",
 ]

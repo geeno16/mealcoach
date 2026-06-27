@@ -11,6 +11,8 @@ Routers:
 
 Routes:
 POST /auth                                                  || input schema: AuthWrite, output schema: AuthRead
+POST /auth/verify-email                                     || input schema: EmailVerify, output schema: AuthRead
+POST /auth/resend-code                                      || input schema: AuthWrite, output schema: MessageResponse
 POST /auth/login                                            || input schema: AuthWrite, output schema: AuthRead
 POST /auth/logout                                           || input schema: None, output schema: MessageResponse
 PUT /auth/{id: int}                                         || input schema: AuthWrite, output schema: AuthRead

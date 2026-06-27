@@ -12,6 +12,9 @@ class Auth(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(unique=True, nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
+    is_verified: Mapped[bool] = mapped_column(
+        nullable=False, default=False
+    )
 
     updated_at: Mapped[datetime] = mapped_column(
         nullable=False, default=func.now(), onupdate=func.now()
