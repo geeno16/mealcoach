@@ -17,7 +17,9 @@ JpegBody = Annotated[bytes, Body(media_type="image/jpeg")]
     responses={
         200: {
             "content": {
-                "image/jpeg": {"schema": {"type": "string", "format": "binary"}}
+                "image/jpeg": {
+                    "schema": {"type": "string", "format": "binary"}
+                }
             }
         }
     },
@@ -31,33 +33,24 @@ async def get_picture_get(
     return Response(content=data, media_type="image/jpeg")
 
 
-@picture_router.get("/posts/{post_id}/pictures", response_model=list[int])
-async def get_post_pictures_get(
-    post_id: int,
-    service: PictureServiceDependency,
-    current: CurrentAuthDependency,
-) -> list[int]:
-    return await service.get_post_pictures_get(post_id, current)
-
-
-@picture_router.post(
-    "/posts/{post_id}/pictures",
-    status_code=status.HTTP_201_CREATED,
-    response_model=PictureRead,
+@picture_router.put(
+    "/meals/{meal_id}/picture", response_model=PictureRead
 )
-async def create_post_picture_post(
-    post_id: int,
+async def set_meal_picture_put(
+    meal_id: int,
     data: JpegBody,
     service: PictureServiceDependency,
     current: CurrentAuthDependency,
     response: Response,
 ) -> PictureRead:
-    picture = await service.create_post_picture(post_id, data, current)
+    picture = await service.set_meal_picture(meal_id, data, current)
     response.headers["Location"] = f"/api/pictures/{picture.id}"
     return PictureRead.model_validate(picture)
 
 
-@picture_router.put("/users/{user_id}/avatar", response_model=PictureRead)
+@picture_router.put(
+    "/users/{user_id}/avatar", response_model=PictureRead
+)
 async def set_avatar_put(
     user_id: int,
     data: JpegBody,
@@ -68,18 +61,6 @@ async def set_avatar_put(
     picture = await service.set_avatar(user_id, data, current)
     response.headers["Location"] = f"/api/pictures/{picture.id}"
     return PictureRead.model_validate(picture)
-
-
-@picture_router.put(
-    "/pictures/{id}", status_code=status.HTTP_204_NO_CONTENT
-)
-async def update_picture_put(
-    id: int,
-    data: JpegBody,
-    service: PictureServiceDependency,
-    current: CurrentAuthDependency,
-) -> None:
-    await service.update_picture_put(id, data, current)
 
 
 @picture_router.delete(

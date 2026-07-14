@@ -20,6 +20,7 @@ DELETE /auth/{id: int}                                      || input schema: Non
 
 GET /users/{id: int}                                        || input schema: int, output schema: UserRead
 GET /users?coach_id={coach_id: int}                         || input schema: int, output schema: [UserRead]
+GET /users/{id: int}/statistics                             || input schema: int, output schema: StatisticsRead
 POST /users                                                 || input schema: UserWrite, output schema: UserRead
 PUT /users/{id: int}                                        || input schema: UserWrite, output schema: UserRead
 
@@ -30,8 +31,6 @@ PUT /posts/{id: int}                                        || input schema: Pos
 DELETE /posts/{id: int}                                     || input schema: int, output schema: None
 
 GET /pictures/{id: int}                                     || output: image/jpeg
-GET /posts/{post_id: int}/pictures                          || output schema: [int]
-POST /posts/{post_id: int}/pictures                         || input: image/jpeg, output schema: PictureRead
+PUT /meals/{meal_id: int}/picture                           || input: image/jpeg, output schema: PictureRead
 PUT /users/{user_id: int}/avatar                            || input: image/jpeg, output schema: PictureRead
-PUT /pictures/{id: int}                                     || input: image/jpeg, output schema: None
 DELETE /pictures/{id: int}                                  || input schema: None, output schema: None

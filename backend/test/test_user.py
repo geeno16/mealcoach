@@ -1,7 +1,6 @@
 import pytest
 
 from src.user import UserWrite
-
 from test.helpers import (
     create_user,
     get_trainees,

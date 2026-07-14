@@ -6,11 +6,32 @@ from pydantic import (
     Field,
 )
 
+MIN_POST_MEALS = 1
+MAX_POST_MEALS = 3
+
+
+class MealBase(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=50)
+    cal: int | None = Field(default=None, ge=0)
+    protein: int | None = Field(default=None, ge=0)
+    fat: int | None = Field(default=None, ge=0)
+    carbohydrate: int | None = Field(default=None, ge=0)
+
+
+class MealWrite(MealBase):
+    pass
+
+
+class MealRead(MealBase):
+    id: int
+    picture_id: int | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
 
 class PostBase(BaseModel):
     auth_id: int
     name: str = Field(min_length=1, max_length=50)
-    energy: int | None = Field(default=None)
     description: str | None = Field(
         default=None, min_length=1, max_length=200
     )
@@ -22,11 +43,13 @@ class PostBase(BaseModel):
 
 
 class PostWrite(PostBase):
-    pass
+    meals: list[MealWrite] = Field(default_factory=list)
 
 
 class PostRead(PostBase):
     id: int
+
+    meals: list[MealRead] = Field(default_factory=list)
 
     updated_at: datetime
     created_at: datetime

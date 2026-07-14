@@ -12,21 +12,11 @@ export const pictureApi = {
     return result!;
   },
 
-  async getPostPictures(postId: number): Promise<number[]> {
-    const { data: result } = await apiClient.GET(
-      "/api/posts/{post_id}/pictures",
+  async setMealPicture(mealId: number, data: Blob): Promise<PictureRead> {
+    const { data: result } = await apiClient.PUT(
+      "/api/meals/{meal_id}/picture",
       {
-        params: { path: { post_id: postId } },
-      },
-    );
-    return result!;
-  },
-
-  async createPostPicture(postId: number, data: Blob): Promise<PictureRead> {
-    const { data: result } = await apiClient.POST(
-      "/api/posts/{post_id}/pictures",
-      {
-        params: { path: { post_id: postId } },
+        params: { path: { meal_id: mealId } },
         body: data,
         bodySerializer: (body) => body,
       },
@@ -44,14 +34,6 @@ export const pictureApi = {
       },
     );
     return result!;
-  },
-
-  async updatePicture(id: number, data: Blob): Promise<void> {
-    await apiClient.PUT("/api/pictures/{id}", {
-      params: { path: { id } },
-      body: data,
-      bodySerializer: (body) => body,
-    });
   },
 
   async deletePicture(id: number): Promise<void> {

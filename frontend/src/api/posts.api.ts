@@ -3,6 +3,8 @@ import { type components } from "./schema.gen";
 
 export type PostWrite = components["schemas"]["PostWrite"];
 export type PostRead = components["schemas"]["PostRead"];
+export type MealWrite = components["schemas"]["MealWrite"];
+export type MealRead = components["schemas"]["MealRead"];
 
 export const postsApi = {
   async getPost(id: number): Promise<PostRead> {

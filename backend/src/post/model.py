@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import ForeignKey, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.common import Base
 
@@ -15,7 +15,6 @@ class Post(Base):
     )
     name: Mapped[str] = mapped_column(nullable=False)
     mark: Mapped[int | None] = mapped_column(nullable=True)
-    energy: Mapped[int | None] = mapped_column(nullable=True)
     description: Mapped[str | None] = mapped_column(nullable=True)
     comment: Mapped[str | None] = mapped_column(nullable=True)
 
@@ -25,3 +24,32 @@ class Post(Base):
     created_at: Mapped[datetime] = mapped_column(
         nullable=False, default=func.now()
     )
+
+    meals: Mapped[list["Meal"]] = relationship(
+        back_populates="post",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="Meal.id",
+    )
+
+
+class Meal(Base):
+    __tablename__ = "meal"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    post_id: Mapped[int] = mapped_column(
+        ForeignKey("post.id", ondelete="CASCADE"), nullable=False
+    )
+    picture_id: Mapped[int | None] = mapped_column(
+        ForeignKey(
+            "picture.id", use_alter=True, name="fk_meal_picture_id"
+        ),
+        nullable=True,
+    )
+    name: Mapped[str | None] = mapped_column(nullable=True)
+    cal: Mapped[int | None] = mapped_column(nullable=True)
+    protein: Mapped[int | None] = mapped_column(nullable=True)
+    fat: Mapped[int | None] = mapped_column(nullable=True)
+    carbohydrate: Mapped[int | None] = mapped_column(nullable=True)
+
+    post: Mapped["Post"] = relationship(back_populates="meals")
