@@ -10,6 +10,7 @@ from src.common import create_database_if_not_exists, create_tables
 from src.email_code import EmailCode  # noqa: F401
 from src.picture import Picture, picture_router  # noqa: F401
 from src.post import Post, post_router  # noqa: F401
+from src.statistics import statistics_router
 from src.user import User, user_router  # noqa: F401
 
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
@@ -28,6 +29,7 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(post_router)
 app.include_router(picture_router)
+app.include_router(statistics_router)
 
 if FRONTEND_DIST.is_dir():
 

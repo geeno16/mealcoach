@@ -2,7 +2,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.post import PostRepository, PostWrite
+from src.post import MealWrite, PostRepository, PostWrite
 from src.user import UserRepository, UserWrite
 from test.helpers import (
     create_post,
@@ -17,7 +17,11 @@ from test.helpers import (
 @pytest_asyncio.fixture
 async def post_data(db_session: AsyncSession, auth, user: UserWrite):
     await UserRepository(db_session).create(user)
-    schema = PostWrite(auth_id=auth.id, name="Test post")
+    schema = PostWrite(
+        auth_id=auth.id,
+        name="Test post",
+        meals=[MealWrite(name="Egg", cal=100)],
+    )
     yield schema
 
 
@@ -32,7 +36,11 @@ async def post(db_session: AsyncSession, post_data):
 async def trainee_post(db_session: AsyncSession, team):
     repo = PostRepository(db_session)
     model = await repo.create(
-        PostWrite(auth_id=team[1].auth.id, name="Trainee post")
+        PostWrite(
+            auth_id=team[1].auth.id,
+            name="Trainee post",
+            meals=[MealWrite(name="Oatmeal", cal=250)],
+        )
     )
     yield model
 
@@ -43,8 +51,49 @@ async def test_create_post_post_positive(async_client, auth, post_data):
     response = await create_post(post_data, async_client)
 
     assert response.status_code == 201
-    assert response.json()["comment"] is None
-    assert response.json()["mark"] is None
+    body = response.json()
+    assert body["comment"] is None
+    assert body["mark"] is None
+    assert len(body["meals"]) == 1
+    assert body["meals"][0]["name"] == "Egg"
+    assert body["meals"][0]["cal"] == 100
+    assert isinstance(body["meals"][0]["id"], int)
+    assert body["meals"][0]["picture_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_create_post_post_meals_boundaries(
+    async_client, auth, user: UserWrite, db_session: AsyncSession
+):
+    await UserRepository(db_session).create(user)
+    await login(auth.email, auth.password, async_client)
+
+    response = await create_post(
+        PostWrite(auth_id=auth.id, name="No meals", meals=[]),
+        async_client,
+    )
+    assert response.status_code == 400
+
+    response = await create_post(
+        PostWrite(
+            auth_id=auth.id,
+            name="Too many meals",
+            meals=[MealWrite(name=f"Meal {i}") for i in range(4)],
+        ),
+        async_client,
+    )
+    assert response.status_code == 400
+
+    response = await create_post(
+        PostWrite(
+            auth_id=auth.id,
+            name="Three meals",
+            meals=[MealWrite(name=f"Meal {i}") for i in range(3)],
+        ),
+        async_client,
+    )
+    assert response.status_code == 201
+    assert len(response.json()["meals"]) == 3
 
 
 @pytest.mark.asyncio
@@ -58,7 +107,11 @@ async def test_create_post_post_negative(
 
     await login(team[0].auth.email, team[0].auth.password, async_client)
     response = await create_post(
-        PostWrite(auth_id=team[0].auth.id, name="Coach post"),
+        PostWrite(
+            auth_id=team[0].auth.id,
+            name="Coach post",
+            meals=[MealWrite(name="Steak")],
+        ),
         async_client,
     )
     assert response.status_code == 403
@@ -70,6 +123,7 @@ async def test_get_post_get_positive(async_client, team, trainee_post):
     response = await get_post(trainee_post.id, async_client)
     assert response.status_code == 200
     assert response.json()["id"] == trainee_post.id
+    assert response.json()["meals"][0]["name"] == "Oatmeal"
 
     await login(team[0].auth.email, team[0].auth.password, async_client)
     response = await get_post(trainee_post.id, async_client)
@@ -123,36 +177,51 @@ async def test_get_all_posts_get_negative(
 
 
 @pytest.mark.asyncio
-async def test_update_post_put_positive(
-    async_client, auth, post, team, trainee_post
-):
+async def test_update_post_put_owner(async_client, auth, post):
     await login(auth.email, auth.password, async_client)
     response = await update_post(
         post.id,
         PostWrite(
-            auth_id=auth.id, name="Updated name", comment="ignored"
+            auth_id=auth.id,
+            name="Updated name",
+            description="Updated description",
+            comment="Own comment",
+            mark=4,
+            meals=[MealWrite(name="Hacked meal")],
         ),
         async_client,
     )
     assert response.status_code == 200
-    assert response.json()["name"] == "Updated name"
-    assert response.json()["comment"] is None
+    body = response.json()
+    assert body["name"] == "Updated name"
+    assert body["description"] == "Updated description"
+    assert body["comment"] == "Own comment"
+    assert body["mark"] == 4
+    assert len(body["meals"]) == 1
+    assert body["meals"][0]["name"] == "Egg"
 
+
+@pytest.mark.asyncio
+async def test_update_post_put_coach(async_client, team, trainee_post):
     await login(team[0].auth.email, team[0].auth.password, async_client)
     response = await update_post(
         trainee_post.id,
         PostWrite(
             auth_id=team[1].auth.id,
-            name="ignored",
+            name="Coach renamed",
             comment="Coach comment",
             mark=5,
+            meals=[MealWrite(name="Hacked meal")],
         ),
         async_client,
     )
     assert response.status_code == 200
-    assert response.json()["comment"] == "Coach comment"
-    assert response.json()["mark"] == 5
-    assert response.json()["name"] == "Trainee post"
+    body = response.json()
+    assert body["comment"] == "Coach comment"
+    assert body["mark"] == 5
+    assert body["name"] == "Coach renamed"
+    assert len(body["meals"]) == 1
+    assert body["meals"][0]["name"] == "Oatmeal"
 
 
 @pytest.mark.asyncio
@@ -162,7 +231,11 @@ async def test_update_post_put_negative(
     await login(team[2].auth.email, team[2].auth.password, async_client)
     response = await update_post(
         trainee_post.id,
-        PostWrite(auth_id=team[1].auth.id, name="hack"),
+        PostWrite(
+            auth_id=team[1].auth.id,
+            name="hack",
+            meals=[MealWrite(name="hack")],
+        ),
         async_client,
     )
     assert response.status_code == 403
@@ -176,6 +249,7 @@ async def test_update_post_put_negative(
             auth_id=team[1].auth.id,
             name=trainee_post.name,
             comment="hack",
+            meals=[MealWrite(name="hack")],
         ),
         async_client,
     )

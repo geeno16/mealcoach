@@ -24,15 +24,23 @@ POST
     auth_id: int                (FK, post n - 1 user, not null)
     name: str                   (not null)
     mark: int                   (nullable)
-    energy: int                 (nullable)
     description: str            (nullable)
     comment: str                (nullable)
     updated_at: datetime        (not null, auto)
     created_at: datetime        (not null, auto)
 
+MEAL
+    id: int                     (PK)
+    post_id: int                (FK, meal n - 1 post, not null)
+    picture_id: int             (FK, meal 1 - picture 1, nullable)
+    name: str                   (nullable)
+    cal: int                    (nullable)
+    protein: int                (nullable)
+    fat: int                    (nullable)
+    carbohydrate: int           (nullable)
+
 PICTURE 
     id: int                     (PK)
-    post_id: int                (FK, picture n - 1 post, nullable)
     data: bytes                 (not null)
     updated_at: datetime        (not null, auto)
     created_at: datetime        (not null, auto)

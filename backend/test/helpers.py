@@ -18,7 +18,9 @@ async def create_account(email: str, password: str, async_client):
 _sent_codes: dict[str, str] = {}
 
 
-async def verify_email(email: str, async_client, code: str | None = None):
+async def verify_email(
+    email: str, async_client, code: str | None = None
+):
     if code is None:
         code = _sent_codes[email]
     return await async_client.post(
@@ -107,20 +109,20 @@ async def delete_post(id: int, async_client):
     return await async_client.delete(f"/api/posts/{id}")
 
 
+async def get_statistics(id: int, async_client):
+    return await async_client.get(f"/api/users/{id}/statistics")
+
+
 async def get_picture(id: int, async_client):
     return await async_client.get(f"/api/pictures/{id}")
-
-
-async def get_post_pictures(post_id: int, async_client):
-    return await async_client.get(f"/api/posts/{post_id}/pictures")
 
 
 _JPEG_HEADERS = {"Content-Type": "image/jpeg"}
 
 
-async def create_post_picture(post_id: int, data: bytes, async_client):
-    return await async_client.post(
-        f"/api/posts/{post_id}/pictures",
+async def set_meal_picture(meal_id: int, data: bytes, async_client):
+    return await async_client.put(
+        f"/api/meals/{meal_id}/picture",
         content=data,
         headers=_JPEG_HEADERS,
     )
@@ -131,12 +133,6 @@ async def set_avatar(user_id: int, data: bytes, async_client):
         f"/api/users/{user_id}/avatar",
         content=data,
         headers=_JPEG_HEADERS,
-    )
-
-
-async def update_picture(id: int, data: bytes, async_client):
-    return await async_client.put(
-        f"/api/pictures/{id}", content=data, headers=_JPEG_HEADERS
     )
 
 
