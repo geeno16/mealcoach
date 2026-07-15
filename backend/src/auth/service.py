@@ -13,6 +13,8 @@ from src.auth.schema import (
     CurrentAuth,
     EmailVerify,
     MessageResponse,
+    PasswordForgot,
+    PasswordReset,
 )
 from src.auth.token import create_access_token
 from src.common import hash_secret, verify_secret
@@ -39,7 +41,9 @@ class AuthService:
         self.repo = AuthRepository(session)
         self.code_repo = EmailCodeRepository(session)
 
-    async def _issue_code(self, auth: Auth) -> None:
+    async def _issue_code(self, auth: Auth, send=None) -> None:
+        if send is None:
+            send = sender.send_verification_code
         await self.code_repo.delete_by_auth_id(auth.id)
         code = _generate_code()
         await self.code_repo.create(
@@ -49,7 +53,37 @@ class AuthService:
                 expires_at=datetime.now(UTC) + _CODE_TTL,
             )
         )
-        await sender.send_verification_code(auth.email, code)
+        await send(auth.email, code)
+
+    async def _consume_active_code(
+        self, auth: Auth, code_value: str
+    ) -> None:
+        code = await self.code_repo.get_active_by_auth_id(auth.id)
+        if (
+            not code
+            or code.used
+            or code.expires_at < datetime.now(UTC)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Code is invalid or expired",
+            )
+
+        if code.attempts >= _MAX_ATTEMPTS:
+            await self.code_repo.mark_used(code)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Too many attempts, request a new code",
+            )
+
+        if not verify_secret(code_value, code.code_hash):
+            await self.code_repo.increment_attempts(code)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect code",
+            )
+
+        await self.code_repo.mark_used(code)
 
     async def register_post(self, data: AuthWrite) -> AuthRead:
         existing = await self.repo.get_by_email(data.email)
@@ -70,6 +104,17 @@ class AuthService:
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Could not send verification email",
             ) from exc
+
+        return AuthRead.model_validate(auth)
+
+    async def me(self, current: CurrentAuth) -> AuthRead:
+        auth = await self.repo.get_by_id(current.id)
+
+        if not auth:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
 
         return AuthRead.model_validate(auth)
 
@@ -112,6 +157,46 @@ class AuthService:
 
         return MessageResponse(message="Code sent")
 
+    async def forgot_password_post(
+        self, data: PasswordForgot
+    ) -> MessageResponse:
+        auth = await self.repo.get_by_email(data.email)
+
+        if auth:
+            try:
+                await self._issue_code(
+                    auth, sender.send_password_reset_code
+                )
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail="Could not send password reset email",
+                ) from exc
+
+        return MessageResponse(
+            message="If the account exists, a reset code was sent"
+        )
+
+    async def reset_password_post(
+        self, data: PasswordReset
+    ) -> AuthRead:
+        auth = await self.repo.get_by_email(data.email)
+
+        if not auth:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Code is invalid or expired",
+            )
+
+        await self._consume_active_code(auth, data.code)
+
+        updated = await self.repo.update_by_id(
+            auth.id,
+            AuthWrite(email=auth.email, password=data.password),
+        )
+
+        return AuthRead.model_validate(updated)
+
     async def verify_email_post(self, data: EmailVerify) -> AuthRead:
         auth = await self.repo.get_by_email(data.email)
         if not auth:
@@ -123,33 +208,10 @@ class AuthService:
         if auth.is_verified:
             return AuthRead.model_validate(auth)
 
-        code = await self.code_repo.get_active_by_auth_id(auth.id)
-        if (
-            not code
-            or code.used
-            or code.expires_at < datetime.now(UTC)
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Code is invalid or expired",
-            )
-
-        if code.attempts >= _MAX_ATTEMPTS:
-            await self.code_repo.mark_used(code)
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Too many attempts, request a new code",
-            )
-
-        if not verify_secret(data.code, code.code_hash):
-            await self.code_repo.increment_attempts(code)
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect code",
-            )
+        await self._consume_active_code(auth, data.code)
 
         auth.is_verified = True
-        await self.code_repo.mark_used(code)
+        await self.session.commit()
         await self.session.refresh(auth)
 
         return AuthRead.model_validate(auth)

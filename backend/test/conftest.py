@@ -42,6 +42,9 @@ async def captured_codes(monkeypatch):
     monkeypatch.setattr(
         "src.mailer.sender.send_verification_code", fake_send
     )
+    monkeypatch.setattr(
+        "src.mailer.sender.send_password_reset_code", fake_send
+    )
     yield helpers._sent_codes
 
 

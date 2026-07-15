@@ -6,18 +6,27 @@ Prefix:
 no prefix - landing
 /app - application
 
+Access states:
+guest       - only without a session
+no-profile  - authorized, user profile not created yet
+pending     - authorized trainee awaiting coach approval
+active      - authorized with a ready profile (coach, or confirmed trainee)
+
 Landing entrypoints:
-/                               (unauthorized)
+/                               (guest / any)
 
 Application entrypoints:
-/app/signup                     (unauthorized)
-/app/login                      (unauthorized)
-/app/fork                       (authorized)
-/app/profile                    (authorized)
+/app/signup                     (guest)
+/app/login                      (guest)
+/app/reset                      (guest)
+/app/fork                       (no-profile)
+/app/pending                    (pending)
+/app/profile                    (active)
 
-/app/posts                      (authorized)
-/app/stats                      (authorized)
+Planned:
+/app/posts                      (active, trainee)
+/app/stats                      (active, trainee)
 
-/app/trainees                   (authorized)
-/app/trainee/{auth_id}/posts    (authorized)
-/app/trainee/{auth_id}/stats    (authorized)
+/app/trainees                   (active, coach)
+/app/trainee/{auth_id}/posts    (active, coach)
+/app/trainee/{auth_id}/stats    (active, coach)

@@ -11,8 +11,11 @@ Routers:
 
 Routes:
 POST /auth                                                  || input schema: AuthWrite, output schema: AuthRead
+GET /auth/me                                                || input schema: None, output schema: AuthRead
 POST /auth/verify-email                                     || input schema: EmailVerify, output schema: AuthRead
 POST /auth/resend-code                                      || input schema: AuthWrite, output schema: MessageResponse
+POST /auth/forgot-password                                  || input schema: PasswordForgot, output schema: MessageResponse
+POST /auth/reset-password                                   || input schema: PasswordReset, output schema: AuthRead
 POST /auth/login                                            || input schema: AuthWrite, output schema: AuthRead
 POST /auth/logout                                           || input schema: None, output schema: MessageResponse
 PUT /auth/{id: int}                                         || input schema: AuthWrite, output schema: AuthRead
@@ -21,8 +24,12 @@ DELETE /auth/{id: int}                                      || input schema: Non
 GET /users/{id: int}                                        || input schema: int, output schema: UserRead
 GET /users?coach_id={coach_id: int}                         || input schema: int, output schema: [UserRead]
 GET /users/{id: int}/statistics                             || input schema: int, output schema: StatisticsRead
+GET /users/{id: int}/requests                               || input schema: int, output schema: [UserRead]
 POST /users                                                 || input schema: UserWrite, output schema: UserRead
+POST /users/{id: int}/request-coach                         || input schema: CoachRequest, output schema: UserRead
+POST /users/{id: int}/approve                               || input schema: int, output schema: UserRead
 PUT /users/{id: int}                                        || input schema: UserWrite, output schema: UserRead
+DELETE /users/{id: int}/coach                               || input schema: int, output schema: None
 
 GET /posts/{id: int}                                        || input schema: int, output schema: PostRead
 GET /posts?auth_id={auth_id: int}                           || input schema: int, output schema: [PostRead]

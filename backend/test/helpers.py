@@ -32,6 +32,10 @@ async def verify_email(
     )
 
 
+async def get_me(async_client):
+    return await async_client.get("/api/auth/me")
+
+
 async def login(email: str, password: str, async_client):
     return await async_client.post(
         "/api/auth/login",
@@ -49,6 +53,24 @@ async def resend_code(email: str, password: str, async_client):
             "email": email,
             "password": password,
         },
+    )
+
+
+async def forgot_password(email: str, async_client):
+    return await async_client.post(
+        "/api/auth/forgot-password",
+        json={"email": email},
+    )
+
+
+async def reset_password(
+    email: str, password: str, async_client, code: str | None = None
+):
+    if code is None:
+        code = _sent_codes[email]
+    return await async_client.post(
+        "/api/auth/reset-password",
+        json={"email": email, "code": code, "password": password},
     )
 
 
@@ -81,6 +103,25 @@ async def update_user(id: int, data, async_client):
     return await async_client.put(
         f"/api/users/{id}", json=data.model_dump(mode="json")
     )
+
+
+async def get_requests(coach_id: int, async_client):
+    return await async_client.get(f"/api/users/{coach_id}/requests")
+
+
+async def request_coach(id: int, coach_email: str, async_client):
+    return await async_client.post(
+        f"/api/users/{id}/request-coach",
+        json={"coach_email": coach_email},
+    )
+
+
+async def approve_request(trainee_id: int, async_client):
+    return await async_client.post(f"/api/users/{trainee_id}/approve")
+
+
+async def delete_coach(trainee_id: int, async_client):
+    return await async_client.delete(f"/api/users/{trainee_id}/coach")
 
 
 async def get_post(id: int, async_client):

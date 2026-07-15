@@ -2,7 +2,7 @@ from fastapi import APIRouter, Response, status
 
 from src.auth.dependency import CurrentAuthDependency
 from src.user.dependency import UserServiceDependency
-from src.user.schema import UserRead, UserWrite
+from src.user.schema import CoachRequest, UserRead, UserWrite
 
 user_router = APIRouter(prefix="/api/users", tags=["Users"])
 
@@ -14,6 +14,45 @@ async def get_trainees_get(
     current: CurrentAuthDependency,
 ) -> list[UserRead]:
     return await service.get_trainees_get(coach_id, current)
+
+
+@user_router.get("/{id}/requests", response_model=list[UserRead])
+async def get_requests_get(
+    id: int,
+    service: UserServiceDependency,
+    current: CurrentAuthDependency,
+) -> list[UserRead]:
+    return await service.get_requests_get(id, current)
+
+
+@user_router.post("/{id}/request-coach", response_model=UserRead)
+async def request_coach_post(
+    id: int,
+    data: CoachRequest,
+    service: UserServiceDependency,
+    current: CurrentAuthDependency,
+) -> UserRead:
+    return await service.request_coach_post(id, data, current)
+
+
+@user_router.post("/{id}/approve", response_model=UserRead)
+async def approve_request_post(
+    id: int,
+    service: UserServiceDependency,
+    current: CurrentAuthDependency,
+) -> UserRead:
+    return await service.approve_request_post(id, current)
+
+
+@user_router.delete(
+    "/{id}/coach", status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_coach_delete(
+    id: int,
+    service: UserServiceDependency,
+    current: CurrentAuthDependency,
+) -> None:
+    await service.delete_coach_delete(id, current)
 
 
 @user_router.get("/{id}", response_model=UserRead)

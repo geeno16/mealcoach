@@ -5,8 +5,11 @@ from test.helpers import (
     basic_password,
     create_account,
     delete_account,
+    forgot_password,
+    get_me,
     get_user,
     login,
+    reset_password,
     verify_email,
 )
 
@@ -63,6 +66,76 @@ async def test_login_unverified_forbidden(async_client):
     await create_account(basic_email, basic_password, async_client)
     response = await login(basic_email, basic_password, async_client)
     assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_me_positive(async_client):
+    auth = await create_account(
+        basic_email, basic_password, async_client
+    )
+    id = auth.json()["id"]
+    await verify_email(basic_email, async_client)
+    await login(basic_email, basic_password, async_client)
+
+    response = await get_me(async_client)
+    assert response.status_code == 200
+    assert response.json()["id"] == id
+    assert response.json()["email"] == basic_email
+
+
+@pytest.mark.asyncio
+async def test_me_unauthorized(async_client):
+    response = await get_me(async_client)
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_reset_password_flow(async_client):
+    new_password = "NewPass123"
+    await create_account(basic_email, basic_password, async_client)
+    await verify_email(basic_email, async_client)
+
+    response = await forgot_password(basic_email, async_client)
+    assert response.status_code == 200
+
+    response = await reset_password(
+        basic_email, new_password, async_client
+    )
+    assert response.status_code == 200
+
+    response = await login(basic_email, basic_password, async_client)
+    assert response.status_code == 401
+
+    response = await login(basic_email, new_password, async_client)
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_forgot_password_unknown_email(async_client):
+    response = await forgot_password("nobody@example.com", async_client)
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_reset_password_wrong_code(async_client):
+    await create_account(basic_email, basic_password, async_client)
+    await verify_email(basic_email, async_client)
+    await forgot_password(basic_email, async_client)
+
+    response = await reset_password(
+        basic_email, "NewPass123", async_client, code="000000"
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_reset_password_weak_password(async_client):
+    await create_account(basic_email, basic_password, async_client)
+    await verify_email(basic_email, async_client)
+    await forgot_password(basic_email, async_client)
+
+    response = await reset_password(basic_email, "short", async_client)
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio

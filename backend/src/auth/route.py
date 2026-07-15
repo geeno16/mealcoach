@@ -9,6 +9,8 @@ from src.auth.schema import (
     AuthWrite,
     EmailVerify,
     MessageResponse,
+    PasswordForgot,
+    PasswordReset,
 )
 
 auth_router = APIRouter(prefix="/api/auth", tags=["Auth"])
@@ -25,6 +27,14 @@ async def register_post(
     return auth
 
 
+@auth_router.get("/me", response_model=AuthRead)
+async def get_me_get(
+    service: AuthServiceDependency,
+    current: CurrentAuthDependency,
+) -> AuthRead:
+    return await service.me(current)
+
+
 @auth_router.post("/verify-email", response_model=AuthRead)
 async def verify_email_post(
     data: EmailVerify, service: AuthServiceDependency
@@ -37,6 +47,20 @@ async def resend_code_post(
     data: AuthWrite, service: AuthServiceDependency
 ) -> MessageResponse:
     return await service.resend_code_post(data)
+
+
+@auth_router.post("/forgot-password", response_model=MessageResponse)
+async def forgot_password_post(
+    data: PasswordForgot, service: AuthServiceDependency
+) -> MessageResponse:
+    return await service.forgot_password_post(data)
+
+
+@auth_router.post("/reset-password", response_model=AuthRead)
+async def reset_password_post(
+    data: PasswordReset, service: AuthServiceDependency
+) -> AuthRead:
+    return await service.reset_password_post(data)
 
 
 @auth_router.post("/login", response_model=AuthRead)

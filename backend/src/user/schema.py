@@ -1,6 +1,7 @@
 from pydantic import (
     BaseModel,
     ConfigDict,
+    EmailStr,
     Field,
 )
 
@@ -19,12 +20,17 @@ class UserBase(BaseModel):
     weight: int | None = Field(default=None, gt=1, lt=200)
     height: int | None = Field(default=None, gt=1, lt=300)
     coach_id: int | None = Field(default=None)
+    coach_request_id: int | None = Field(default=None)
     picture_id: int | None = Field(default=None)
 
 
 class UserWrite(UserBase):
-    pass
+    coach_email: EmailStr | None = Field(default=None)
 
 
 class UserRead(UserBase):
     model_config = ConfigDict(from_attributes=True)
+
+
+class CoachRequest(BaseModel):
+    coach_email: EmailStr

@@ -20,6 +20,9 @@ class User(Base):
     coach_id: Mapped[int | None] = mapped_column(
         ForeignKey("user.auth_id"), nullable=True
     )
+    coach_request_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user.auth_id"), nullable=True
+    )
     picture_id: Mapped[int | None] = mapped_column(
         ForeignKey("picture.id", use_alter=True, name="fk_user_picture_id"), nullable=True
     )

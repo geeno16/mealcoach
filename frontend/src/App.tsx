@@ -1,3 +1,5 @@
+import { AppRouter } from "./routing/AppRouter";
+
 export function App() {
-  return <div>Mealcoach</div>;
+  return <AppRouter />;
 }

@@ -32,4 +32,35 @@ export const usersApi = {
     });
     return result!;
   },
+
+  async getRequests(coachId: number): Promise<UserRead[]> {
+    const { data: result } = await apiClient.GET("/api/users/{id}/requests", {
+      params: { path: { id: coachId } },
+    });
+    return result!;
+  },
+
+  async requestCoach(id: number, coachEmail: string): Promise<UserRead> {
+    const { data: result } = await apiClient.POST(
+      "/api/users/{id}/request-coach",
+      {
+        params: { path: { id } },
+        body: { coach_email: coachEmail },
+      },
+    );
+    return result!;
+  },
+
+  async approveRequest(traineeId: number): Promise<UserRead> {
+    const { data: result } = await apiClient.POST("/api/users/{id}/approve", {
+      params: { path: { id: traineeId } },
+    });
+    return result!;
+  },
+
+  async deleteCoach(traineeId: number): Promise<void> {
+    await apiClient.DELETE("/api/users/{id}/coach", {
+      params: { path: { id: traineeId } },
+    });
+  },
 };

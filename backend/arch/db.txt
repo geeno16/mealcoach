@@ -11,6 +11,7 @@ AUTH
 USER
     auth_id: int                (PK, FK auth 1 - 1 user)
     coach_id: int               (FK user 1 - n user, nullable)
+    coach_request_id: int       (FK user 1 - n user, nullable)
     picture_id: int             (FK user 1 - 1 picture, nullable)
     role: "coach" | "trainee"   (not null)
     name: str                   (not null)

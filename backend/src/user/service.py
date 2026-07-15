@@ -1,15 +1,51 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth.repository import AuthRepository
 from src.auth.schema import CurrentAuth
-from src.user.model import UserRole
+from src.user.model import User, UserRole
 from src.user.repository import UserRepository
-from src.user.schema import UserRead, UserWrite
+from src.user.schema import CoachRequest, UserRead, UserWrite
 
 
 class UserService:
     def __init__(self, session: AsyncSession):
+        self.session = session
         self.repo = UserRepository(session)
+        self.auth_repo = AuthRepository(session)
+
+    async def _assert_coach(self, current: CurrentAuth) -> None:
+        coach = await self.repo.get_by_id(current.id)
+        if not coach or coach.role != UserRole.coach:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only a coach can do this",
+            )
+
+    async def _get_pending_request_or_404(
+        self, trainee_id: int, coach_id: int
+    ) -> User:
+        trainee = await self.repo.get_by_id(trainee_id)
+        if not trainee or trainee.coach_request_id != coach_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Request not found",
+            )
+        return trainee
+
+    async def _resolve_coach_id(self, email: str) -> int:
+        coach_auth = await self.auth_repo.get_by_email(email)
+        coach = (
+            await self.repo.get_by_id(coach_auth.id)
+            if coach_auth
+            else None
+        )
+        if not coach or coach.role != UserRole.coach:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Coach not found",
+            )
+        return coach.auth_id
 
     async def _assert_access(
         self, auth_id: int, current: CurrentAuth
@@ -71,8 +107,116 @@ class UserService:
                 detail=f"User with auth_id={data.auth_id} already exists",
             )
 
+        if data.role == UserRole.trainee:
+            if not data.coach_email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Trainee must specify a coach",
+                )
+            coach_id = await self._resolve_coach_id(data.coach_email)
+            data = data.model_copy(
+                update={
+                    "coach_id": None,
+                    "coach_request_id": coach_id,
+                }
+            )
+        else:
+            data = data.model_copy(
+                update={"coach_id": None, "coach_request_id": None}
+            )
+
         user = await self.repo.create(data)
         return UserRead.model_validate(user)
+
+    async def request_coach_post(
+        self, auth_id: int, data: CoachRequest, current: CurrentAuth
+    ) -> UserRead:
+        if auth_id != current.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can request a coach only for yourself",
+            )
+
+        user = await self.repo.get_by_id(auth_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+        if user.role != UserRole.trainee:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only a trainee can request a coach",
+            )
+        if user.coach_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You already have a coach",
+            )
+        if user.coach_request_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You already have a pending request",
+            )
+
+        user.coach_request_id = await self._resolve_coach_id(
+            data.coach_email
+        )
+        await self.session.commit()
+        await self.session.refresh(user)
+        return UserRead.model_validate(user)
+
+    async def delete_coach_delete(
+        self, trainee_id: int, current: CurrentAuth
+    ) -> None:
+        trainee = await self.repo.get_by_id(trainee_id)
+        if not trainee:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+
+        allowed = (
+            trainee_id == current.id
+            or trainee.coach_id == current.id
+            or trainee.coach_request_id == current.id
+        )
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied",
+            )
+
+        trainee.coach_id = None
+        trainee.coach_request_id = None
+        await self.session.commit()
+
+    async def get_requests_get(
+        self, coach_id: int, current: CurrentAuth
+    ) -> list[UserRead]:
+        if coach_id != current.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only view your own requests",
+            )
+        await self._assert_coach(current)
+
+        requests = await self.repo.get_all_by_coach_request_id(coach_id)
+        return [UserRead.model_validate(r) for r in requests]
+
+    async def approve_request_post(
+        self, trainee_id: int, current: CurrentAuth
+    ) -> UserRead:
+        await self._assert_coach(current)
+        trainee = await self._get_pending_request_or_404(
+            trainee_id, current.id
+        )
+        trainee.coach_id = current.id
+        trainee.coach_request_id = None
+        await self.session.commit()
+        await self.session.refresh(trainee)
+        return UserRead.model_validate(trainee)
+
 
     async def get_trainees_get(
         self, coach_id: int, current: CurrentAuth

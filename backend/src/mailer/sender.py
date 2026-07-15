@@ -20,14 +20,9 @@ if _MAIL_BACKEND == "smtp" and not all(
     )
 
 
-async def send_verification_code(email: str, code: str) -> None:
-    subject = "Mealcoach: подтверждение почты"
-    body = (
-        f"Код для подтверждения почты: {code}\nОн скоро истечёт."
-    )
-
+async def _send(email: str, subject: str, body: str) -> None:
     if _MAIL_BACKEND == "console":
-        logger.info("Verification code for %s: %s", email, code)
+        logger.info("Mail to %s | %s | %s", email, subject, body)
         return
 
     import aiosmtplib
@@ -46,4 +41,20 @@ async def send_verification_code(email: str, code: str) -> None:
         username=_SMTP_USER,
         password=_SMTP_PASSWORD,
         start_tls=True,
+    )
+
+
+async def send_verification_code(email: str, code: str) -> None:
+    await _send(
+        email,
+        "Mealcoach: подтверждение почты",
+        f"Код для подтверждения почты: {code}\nОн скоро истечёт.",
+    )
+
+
+async def send_password_reset_code(email: str, code: str) -> None:
+    await _send(
+        email,
+        "Mealcoach: сброс пароля",
+        f"Код для сброса пароля: {code}\nОн скоро истечёт.",
     )
