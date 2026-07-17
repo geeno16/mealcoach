@@ -2,6 +2,9 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.schema import CurrentAuth
+from src.notification.model import NotificationType
+from src.notification.repository import NotificationRepository
+from src.notification.schema import NotificationWrite
 from src.picture.repository import PictureRepository
 from src.post.repository import PostRepository
 from src.post.schema import (
@@ -20,6 +23,7 @@ class PostService:
         self.repo = PostRepository(session)
         self.user_repo = UserRepository(session)
         self.picture_repo = PictureRepository(session)
+        self.notif_repo = NotificationRepository(session)
 
     async def create_post_post(
         self, data: PostWrite, current: CurrentAuth
@@ -56,6 +60,17 @@ class PostService:
         post = await self.repo.create(
             data.model_copy(update={"comment": None, "mark": None})
         )
+
+        if current_user.coach_id is not None:
+            await self.notif_repo.create(
+                NotificationWrite(
+                    recipient_id=current_user.coach_id,
+                    actor_id=current.id,
+                    post_id=post.id,
+                    type=NotificationType.post_created,
+                )
+            )
+
         return PostRead.model_validate(post)
 
     async def get_post_get(
@@ -94,9 +109,23 @@ class PostService:
 
         await assert_can_view(self.user_repo, post.auth_id, current)
 
+        owner_id = post.auth_id
+        graded_by_coach = owner_id != current.id
+
         post = await self.repo.update_by_id(
             id, data, exclude={"auth_id"}
         )
+
+        if graded_by_coach:
+            await self.notif_repo.create(
+                NotificationWrite(
+                    recipient_id=owner_id,
+                    actor_id=current.id,
+                    post_id=id,
+                    type=NotificationType.post_graded,
+                )
+            )
+
         return PostRead.model_validate(post)
 
     async def delete_post_delete(

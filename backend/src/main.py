@@ -9,6 +9,8 @@ from src.auth import auth_router
 from src.common import create_database_if_not_exists, create_tables
 from src.email_code import EmailCode  # noqa: F401
 from src.migration import Migration, run_migrations  # noqa: F401
+from src.notification import Notification  # noqa: F401
+from src.notification.route import notification_router
 from src.picture import Picture, picture_router  # noqa: F401
 from src.post import Post, post_router  # noqa: F401
 from src.statistics import statistics_router
@@ -32,6 +34,7 @@ app.include_router(user_router)
 app.include_router(post_router)
 app.include_router(picture_router)
 app.include_router(statistics_router)
+app.include_router(notification_router)
 
 if FRONTEND_DIST.is_dir():
 

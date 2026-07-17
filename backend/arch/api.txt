@@ -8,6 +8,7 @@ Routers:
 /users
 /posts
 /pictures
+/notifications
 
 Routes:
 POST /auth                                                  || input schema: AuthWrite, output schema: AuthRead
@@ -36,6 +37,8 @@ GET /posts?auth_id={auth_id: int}                           || input schema: int
 POST /posts                                                 || input schema: PostWrite, output schema: PostRead
 PUT /posts/{id: int}                                        || input schema: PostWrite, output schema: PostRead
 DELETE /posts/{id: int}                                     || input schema: int, output schema: None
+
+GET /notifications                                          || input schema: None, output schema: [NotificationRead]
 
 GET /pictures/{id: int}                                     || output: image/jpeg
 PUT /meals/{meal_id: int}/picture                           || input: image/jpeg, output schema: PictureRead

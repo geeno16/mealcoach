@@ -9,10 +9,10 @@ AUTH
     created_at: datetime        (not null, auto)
 
 USER
-    auth_id: int                (PK, FK auth 1 - 1 user)
-    coach_id: int               (FK user 1 - n user, nullable)
-    coach_request_id: int       (FK user 1 - n user, nullable)
-    picture_id: int             (FK user 1 - 1 picture, nullable)
+    auth_id: int                (PK, FK, user 1 - 1 auth)
+    coach_id: int               (FK, user n - 1 user (coach), nullable)
+    coach_request_id: int       (FK, user n - 1 user (coach), nullable)
+    picture_id: int             (FK, user 1 - 1 picture, nullable)
     role: "coach" | "trainee"   (not null)
     name: str                   (not null)
     surname: str                (nullable)
@@ -33,7 +33,7 @@ POST
 MEAL
     id: int                     (PK)
     post_id: int                (FK, meal n - 1 post, not null)
-    picture_id: int             (FK, meal 1 - picture 1, nullable)
+    picture_id: int             (FK, meal 1 - 1 picture, nullable)
     name: str                   (nullable)
     cal: int                    (nullable)
     protein: int                (nullable)
@@ -51,9 +51,18 @@ MIGRATION
     name: str                   (not null, unique)
     applied_at: datetime        (not null, auto)
 
+NOTIFICATION
+    id: int                     (PK)
+    recipient_id: int           (FK, notification n - 1 user, not null, cascade)
+    actor_id: int               (FK, notification n - 1 user, nullable, set null)
+    post_id: int                (FK, notification n - 1 post, nullable, cascade)
+    type: enum                  (not null)
+    updated_at: datetime        (not null, auto)
+    created_at: datetime        (not null, auto)
+
 EMAIL_CODE
     id: int                     (PK)
-    auth_id: int                (FK auth 1 - n email_code, not null, cascade)
+    auth_id: int                (FK, email_code n - 1 auth, not null, cascade)
     code_hash: str              (not null)
     expires_at: datetime        (not null, tz-aware)
     attempts: int               (not null, default 0)

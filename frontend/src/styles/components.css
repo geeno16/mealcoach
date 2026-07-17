@@ -1,32 +1,38 @@
-* {
-  box-sizing: border-box;
+.button {
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  padding: 10px 12px;
+  color: var(--color-surface);
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  text-decoration: none;
 }
 
-body {
-  margin: 0;
-  background: #f5f5f5;
-  color: #1a1a1a;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
-.screen {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 16px;
-  min-height: 100vh;
+.button-secondary {
+  border: 1px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
 }
 
-.card {
+.card,
+.post-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 10%);
-  border-radius: 12px;
-  background: #fff;
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.card {
   padding: 24px;
   width: 100%;
   max-width: 320px;
@@ -37,6 +43,10 @@ body {
   font-size: 20px;
 }
 
+.post-card {
+  padding: 16px;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -45,8 +55,8 @@ body {
 }
 
 .field input {
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
   padding: 8px 10px;
   font-size: 14px;
 }
@@ -63,8 +73,8 @@ body {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
   padding: 10px;
   font-size: 14px;
 }
@@ -89,7 +99,7 @@ body {
 }
 
 .param span:first-child {
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .requests {
@@ -102,8 +112,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  border: 1px solid #eee;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-faint);
+  border-radius: var(--radius);
   padding: 10px;
   font-size: 14px;
 }
@@ -116,41 +126,5 @@ body {
 .request-actions .button {
   flex: 1;
   padding: 6px 8px;
-  font-size: 13px;
-}
-
-.button {
-  cursor: pointer;
-  border: none;
-  border-radius: 8px;
-  background: #2f7d32;
-  padding: 10px 12px;
-  color: #fff;
-  font-weight: 600;
-  font-size: 14px;
-  text-align: center;
-  text-decoration: none;
-}
-
-.button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.button-secondary {
-  border: 1px solid #2f7d32;
-  background: transparent;
-  color: #2f7d32;
-}
-
-.hint {
-  margin: 0;
-  color: #666;
-  font-size: 13px;
-}
-
-.error {
-  margin: 0;
-  color: #c62828;
   font-size: 13px;
 }

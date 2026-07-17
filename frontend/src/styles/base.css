@@ -1,0 +1,25 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-error);
+  font-size: 13px;
+}

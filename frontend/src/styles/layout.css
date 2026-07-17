@@ -1,0 +1,64 @@
+.screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  min-height: 100vh;
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid var(--color-border-soft);
+  background: var(--color-surface);
+  padding: 16px 12px;
+  min-width: 160px;
+}
+
+.sidebar-title {
+  margin: 0 0 12px;
+  padding: 0 8px;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.content {
+  flex: 6;
+  min-width: 0;
+}
+
+.nav-link {
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  color: var(--color-nav);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  background: var(--color-hover);
+}
+
+.nav-link-active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.page {
+  padding: 24px;
+  width: 100%;
+}
+
+.page h1 {
+  margin: 0 0 16px;
+  font-size: 22px;
+}

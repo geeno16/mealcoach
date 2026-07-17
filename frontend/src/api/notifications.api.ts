@@ -1,0 +1,12 @@
+import { apiClient } from "./client";
+import { type components } from "./schema.gen";
+
+export type NotificationRead = components["schemas"]["NotificationRead"];
+export type NotificationType = components["schemas"]["NotificationType"];
+
+export const notificationsApi = {
+  async getNotifications(): Promise<NotificationRead[]> {
+    const { data: result } = await apiClient.GET("/api/notifications");
+    return result!;
+  },
+};

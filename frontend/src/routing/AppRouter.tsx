@@ -1,12 +1,17 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
+import { AppLayout } from "../pages/AppLayout";
 import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
 import { ForkPage } from "../pages/ForkPage";
 import { LandingPage } from "../pages/LandingPage";
 import { LoginPage } from "../pages/LoginPage";
+import { NotificationsPage } from "../pages/NotificationsPage";
 import { PendingPage } from "../pages/PendingPage";
+import { PostsPage } from "../pages/PostsPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { SignupPage } from "../pages/SignupPage";
+import { StatsPage } from "../pages/StatsPage";
+import { TraineesPage } from "../pages/TraineesPage";
 
 import {
   RequireActive,
@@ -37,7 +42,13 @@ export function AppRouter() {
           </Route>
 
           <Route element={<RequireActive />}>
-            <Route path="profile" element={<ProfilePage />} />
+            <Route element={<AppLayout />}>
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="posts" element={<PostsPage />} />
+              <Route path="stats" element={<StatsPage />} />
+              <Route path="trainees" element={<TraineesPage />} />
+            </Route>
           </Route>
         </Route>
 

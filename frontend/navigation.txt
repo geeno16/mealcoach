@@ -22,6 +22,7 @@ Application entrypoints:
 /app/fork                       (no-profile)
 /app/pending                    (pending)
 /app/profile                    (active)
+/app/notifications              (active)
 
 Planned:
 /app/posts                      (active, trainee)

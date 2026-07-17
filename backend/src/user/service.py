@@ -3,6 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.repository import AuthRepository
 from src.auth.schema import CurrentAuth
+from src.notification.model import NotificationType
+from src.notification.repository import NotificationRepository
+from src.notification.schema import NotificationWrite
 from src.user.model import User, UserRole
 from src.user.repository import UserRepository
 from src.user.schema import CoachRequest, UserRead, UserWrite
@@ -13,6 +16,7 @@ class UserService:
         self.session = session
         self.repo = UserRepository(session)
         self.auth_repo = AuthRepository(session)
+        self.notif_repo = NotificationRepository(session)
 
     async def _assert_coach(self, current: CurrentAuth) -> None:
         coach = await self.repo.get_by_id(current.id)
@@ -126,6 +130,16 @@ class UserService:
             )
 
         user = await self.repo.create(data)
+
+        if user.coach_request_id is not None:
+            await self.notif_repo.create(
+                NotificationWrite(
+                    recipient_id=user.coach_request_id,
+                    actor_id=user.auth_id,
+                    type=NotificationType.coach_request,
+                )
+            )
+
         return UserRead.model_validate(user)
 
     async def request_coach_post(
@@ -159,11 +173,19 @@ class UserService:
                 detail="You already have a pending request",
             )
 
-        user.coach_request_id = await self._resolve_coach_id(
-            data.coach_email
-        )
+        coach_id = await self._resolve_coach_id(data.coach_email)
+        user.coach_request_id = coach_id
         await self.session.commit()
         await self.session.refresh(user)
+
+        await self.notif_repo.create(
+            NotificationWrite(
+                recipient_id=coach_id,
+                actor_id=user.auth_id,
+                type=NotificationType.coach_request,
+            )
+        )
+
         return UserRead.model_validate(user)
 
     async def delete_coach_delete(
@@ -187,9 +209,28 @@ class UserService:
                 detail="Access denied",
             )
 
+        prev_coach = trainee.coach_id
+        prev_request = trainee.coach_request_id
+
         trainee.coach_id = None
         trainee.coach_request_id = None
         await self.session.commit()
+
+        if prev_request is not None:
+            pending = await self.notif_repo.get_coach_request(
+                recipient_id=prev_request, actor_id=trainee_id
+            )
+            if pending:
+                await self.notif_repo.delete_by_id(pending.id)
+
+        if prev_coach is not None and current.id != prev_coach:
+            await self.notif_repo.create(
+                NotificationWrite(
+                    recipient_id=prev_coach,
+                    actor_id=trainee_id,
+                    type=NotificationType.trainee_removed,
+                )
+            )
 
     async def get_requests_get(
         self, coach_id: int, current: CurrentAuth
@@ -215,8 +256,23 @@ class UserService:
         trainee.coach_request_id = None
         await self.session.commit()
         await self.session.refresh(trainee)
-        return UserRead.model_validate(trainee)
 
+        pending = await self.notif_repo.get_coach_request(
+            recipient_id=current.id, actor_id=trainee_id
+        )
+        if pending:
+            pending.type = NotificationType.trainee_added
+            await self.session.commit()
+
+        await self.notif_repo.create(
+            NotificationWrite(
+                recipient_id=trainee_id,
+                actor_id=current.id,
+                type=NotificationType.request_accepted,
+            )
+        )
+
+        return UserRead.model_validate(trainee)
 
     async def get_trainees_get(
         self, coach_id: int, current: CurrentAuth

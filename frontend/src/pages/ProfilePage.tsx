@@ -1,19 +1,16 @@
 import { observer } from "mobx-react-lite";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { ApiError, type UserWrite } from "../api";
 import { useStore } from "../root_store/StoreContext";
-
-import { CoachRequests } from "./CoachRequests";
-import { CoachTrainees } from "./CoachTrainees";
 
 function isSet<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined;
 }
 
 export const ProfilePage = observer(function ProfilePage() {
-  const { session, coach } = useStore();
+  const { session } = useStore();
   const navigate = useNavigate();
 
   const [editing, setEditing] = useState(false);
@@ -27,11 +24,6 @@ export const ProfilePage = observer(function ProfilePage() {
   const [detaching, setDetaching] = useState(false);
 
   const user = session.user;
-
-  useEffect(() => {
-    if (user?.role === "coach") void coach.load(user.auth_id);
-  }, [coach, user]);
-
   if (!user) return <Navigate to="/app/fork" replace />;
 
   const handleLogout = async () => {
@@ -198,17 +190,13 @@ export const ProfilePage = observer(function ProfilePage() {
           )}
         </div>
 
-        {user.role === "coach" && (
-          <>
-            <CoachRequests />
-            <CoachTrainees />
-            {coach.error && <p className="error">{coach.error}</p>}
-          </>
-        )}
-
         {error && <p className="error">{error}</p>}
 
-        <button className="button" type="button" onClick={startEdit}>
+        <button
+          className="button button-secondary"
+          type="button"
+          onClick={startEdit}
+        >
           Редактировать
         </button>
 

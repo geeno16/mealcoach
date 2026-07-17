@@ -36,6 +36,10 @@ async def get_me(async_client):
     return await async_client.get("/api/auth/me")
 
 
+async def get_notifications(async_client):
+    return await async_client.get("/api/notifications")
+
+
 async def login(email: str, password: str, async_client):
     return await async_client.post(
         "/api/auth/login",

@@ -1,0 +1,30 @@
+.post-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.post-images {
+  display: flex;
+  gap: 8px;
+}
+
+.post-image {
+  flex: 1 1 0;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-placeholder);
+  aspect-ratio: 1;
+  max-width: 200px;
+}
+
+.post-name {
+  margin: 0;
+  font-size: 18px;
+}
+
+.post-desc {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+}

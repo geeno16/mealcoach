@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.repository import AuthRepository
 from src.auth.schema import AuthWrite
+from src.notification.model import Notification, NotificationType
 from src.post.model import Meal, Post
 from src.user.model import UserRole
 from src.user.repository import UserRepository
@@ -375,6 +377,68 @@ async def upgrade(session: AsyncSession) -> None:
                         "carbohydrate": 40,
                     }
                 ],
+            ),
+        ]
+    )
+    await session.commit()
+
+    ivan_post = (
+        (
+            await session.execute(
+                select(Post.id)
+                .where(Post.auth_id == ivan)
+                .order_by(Post.created_at.desc())
+            )
+        )
+        .scalars()
+        .first()
+    )
+    maria_post = (
+        (
+            await session.execute(
+                select(Post.id)
+                .where(Post.auth_id == maria)
+                .order_by(Post.created_at.desc())
+            )
+        )
+        .scalars()
+        .first()
+    )
+
+    session.add_all(
+        [
+            Notification(
+                recipient_id=coach_anna,
+                actor_id=petr,
+                type=NotificationType.coach_request,
+            ),
+            Notification(
+                recipient_id=ivan,
+                actor_id=coach_anna,
+                type=NotificationType.request_accepted,
+            ),
+            Notification(
+                recipient_id=maria,
+                actor_id=coach_anna,
+                type=NotificationType.request_accepted,
+            ),
+            Notification(
+                recipient_id=coach_anna,
+                actor_id=ivan,
+                post_id=ivan_post,
+                type=NotificationType.post_created,
+            ),
+            Notification(
+                recipient_id=coach_anna,
+                actor_id=maria,
+                post_id=maria_post,
+                type=NotificationType.post_created,
+            ),
+            Notification(
+                recipient_id=ivan,
+                actor_id=coach_anna,
+                post_id=ivan_post,
+                type=NotificationType.post_graded,
             ),
         ]
     )
