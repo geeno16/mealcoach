@@ -1,0 +1,12 @@
+.git
+.env
+.DS_Store
+.vscode
+.devcontainer
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+frontend/src/api/schema.gen.ts

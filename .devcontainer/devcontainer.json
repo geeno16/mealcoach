@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.base.schema.json",
   "name": "Mealcoach",
   "dockerComposeFile": ["../docker-compose.yaml"],
-  "service": "app",
+  "service": "app-dev",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
   "customizations": {

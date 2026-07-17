@@ -46,6 +46,11 @@ PICTURE
     updated_at: datetime        (not null, auto)
     created_at: datetime        (not null, auto)
 
+MIGRATION
+    id: int                     (PK)
+    name: str                   (not null, unique)
+    applied_at: datetime        (not null, auto)
+
 EMAIL_CODE
     id: int                     (PK)
     auth_id: int                (FK auth 1 - n email_code, not null, cascade)

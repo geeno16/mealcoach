@@ -19,11 +19,14 @@ services:
       timeout: 5s
       retries: 10
 
-  app:
+  app-dev:
+    profiles: ["dev"]
     platform: linux/amd64
     build:
       context: .
       dockerfile: Dockerfile
+      target: dev
+    image: mealcoach-app-dev
     container_name: mealcoach_app
     env_file:
       - .env
@@ -37,6 +40,24 @@ services:
       - .:/workspace
     working_dir: /workspace/backend
     command: bash -c "npm --prefix /workspace/frontend install && tail -f /dev/null"
+
+  app-prod:
+    profiles: ["prod"]
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    image: mealcoach-app-prod
+    container_name: mealcoach_app_prod
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
 
 volumes:
   postgres_data:

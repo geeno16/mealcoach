@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from src.auth import auth_router
 from src.common import create_database_if_not_exists, create_tables
 from src.email_code import EmailCode  # noqa: F401
+from src.migration import Migration, run_migrations  # noqa: F401
 from src.picture import Picture, picture_router  # noqa: F401
 from src.post import Post, post_router  # noqa: F401
 from src.statistics import statistics_router
@@ -21,6 +22,7 @@ FRONTEND_INDEX = FRONTEND_DIST / "index.html"
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await create_database_if_not_exists()
     await create_tables()
+    await run_migrations()
     yield
 
 

@@ -39,7 +39,7 @@
       }
     },
     {
-      "label": "Prod: Собрать статику и запустить",
+      "label": "Статика: Собрать и раздать",
       "type": "shell",
       "command": "python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 & UVICORN_PID=$! && until curl -sf http://localhost:8000/openapi.json > /dev/null; do sleep 1; done && (cd /workspace/frontend && npm run gen:api && npm run build) && kill $UVICORN_PID && python -m uvicorn src.main:app --host 0.0.0.0 --port 8000",
       "options": { "cwd": "/workspace/backend" },

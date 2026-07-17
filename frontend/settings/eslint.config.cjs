@@ -58,7 +58,7 @@ const config = [
   },
 
   {
-    files: ["**/*.cjs"],
+    files: ["**/*.cjs", "**/*.mjs"],
     languageOptions: {
       globals: { ...globals.node },
     },
@@ -78,7 +78,10 @@ const config = [
       "@typescript-eslint": tseslint.plugin,
     },
     rules: {
-      "@typescript-eslint/consistent-type-imports": ["warn", { fixStyle: "inline-type-imports" }],
+      "@typescript-eslint/consistent-type-imports": [
+        "warn",
+        { fixStyle: "inline-type-imports" },
+      ],
       "no-unused-vars": "off",
       "no-use-before-define": "off",
       "@typescript-eslint/no-use-before-define": "warn",
