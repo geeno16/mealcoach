@@ -24,15 +24,15 @@
 
 .card,
 .post-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   box-shadow: var(--shadow-card);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
 }
 
 .card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   padding: 24px;
   width: 100%;
   max-width: 320px;
@@ -41,10 +41,6 @@
 .card h1 {
   margin: 0 0 4px;
   font-size: 20px;
-}
-
-.post-card {
-  padding: 16px;
 }
 
 .field {

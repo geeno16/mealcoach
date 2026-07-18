@@ -13,13 +13,18 @@
 
 .sidebar {
   display: flex;
+  position: sticky;
+  top: 0;
   flex: 1;
   flex-direction: column;
+  align-self: flex-start;
   gap: 4px;
   border-right: 1px solid var(--color-border-soft);
   background: var(--color-surface);
   padding: 16px 12px;
   min-width: 160px;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .sidebar-title {
