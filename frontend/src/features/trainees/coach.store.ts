@@ -8,27 +8,23 @@ export class CoachStore {
   trainees: UserRead[] = [];
   error: string | null = null;
   pendingId: number | null = null;
+  loading = false;
 
   constructor() {
     makeAutoObservable(this);
   }
 
   async load(coachId: number): Promise<void> {
-    await runAsync(
-      this,
-      async () => {
-        const trainees = await usersApi.getAllByCoach(coachId);
-        runInAction(() => {
-          this.trainees = trainees;
-        });
+    await runAsync(this, () => this.fetch(coachId), {
+      before: () => {
+        this.coachId = coachId;
+        this.loading = true;
       },
-      {
-        before: () => {
-          this.coachId = coachId;
-        },
-        fallbackMessage: "Не удалось загрузить",
+      after: () => {
+        this.loading = false;
       },
-    );
+      fallbackMessage: "Не удалось загрузить",
+    });
   }
 
   async detach(traineeId: number): Promise<void> {
@@ -36,7 +32,7 @@ export class CoachStore {
       this,
       async () => {
         await usersApi.deleteCoach(traineeId);
-        if (this.coachId !== null) await this.load(this.coachId);
+        if (this.coachId !== null) await this.fetch(this.coachId);
       },
       {
         before: () => {
@@ -47,5 +43,12 @@ export class CoachStore {
         },
       },
     );
+  }
+
+  private async fetch(coachId: number): Promise<void> {
+    const trainees = await usersApi.getAllByCoach(coachId);
+    runInAction(() => {
+      this.trainees = trainees;
+    });
   }
 }

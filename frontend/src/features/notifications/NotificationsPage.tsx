@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 
 import { type NotificationRead } from "../../api";
 import { useStore } from "../../root_store/StoreContext";
+import { Loader } from "../../shared/Loader";
 
 function describe(item: NotificationRead): string {
   const who = item.actor_name ?? "Пользователь";
@@ -40,7 +41,9 @@ export const NotificationsPage = observer(function NotificationsPage() {
 
         {notifications.error && <p className="error">{notifications.error}</p>}
 
-        {notifications.items.length === 0 ? (
+        {notifications.loading ? (
+          <Loader />
+        ) : notifications.items.length === 0 ? (
           <p className="hint">Уведомлений нет</p>
         ) : (
           <div className="requests">

@@ -4,6 +4,7 @@ import { Navigate } from "react-router-dom";
 
 import { type PostRead } from "../../api";
 import { useStore } from "../../root_store/StoreContext";
+import { Loader } from "../../shared/Loader";
 
 import { PostModal } from "./PostModal";
 import { formatPostDate, mealsLabel, PostMark } from "./post-helpers";
@@ -94,7 +95,9 @@ export const PostsPage = observer(function PostsPage() {
 
       {posts.error && <p className="error">{posts.error}</p>}
 
-      {posts.items.length === 0 && !posts.loading ? (
+      {posts.loading ? (
+        <Loader />
+      ) : posts.items.length === 0 ? (
         <p className="hint">Постов пока нет</p>
       ) : (
         <div className="post-list">

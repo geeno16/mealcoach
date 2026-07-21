@@ -7,22 +7,22 @@ export class NotificationStore {
   items: NotificationRead[] = [];
   error: string | null = null;
   pendingId: number | null = null;
+  loading = false;
 
   constructor() {
     makeAutoObservable(this);
   }
 
   async load(): Promise<void> {
-    await runAsync(
-      this,
-      async () => {
-        const items = await notificationsApi.getNotifications();
-        runInAction(() => {
-          this.items = items;
-        });
+    await runAsync(this, () => this.fetch(), {
+      before: () => {
+        this.loading = true;
       },
-      { fallbackMessage: "Не удалось загрузить" },
-    );
+      after: () => {
+        this.loading = false;
+      },
+      fallbackMessage: "Не удалось загрузить",
+    });
   }
 
   async accept(traineeId: number): Promise<void> {
@@ -33,6 +33,13 @@ export class NotificationStore {
     await this.run(traineeId, () => usersApi.deleteCoach(traineeId));
   }
 
+  private async fetch(): Promise<void> {
+    const items = await notificationsApi.getNotifications();
+    runInAction(() => {
+      this.items = items;
+    });
+  }
+
   private async run(
     traineeId: number,
     action: () => Promise<unknown>,
@@ -41,7 +48,7 @@ export class NotificationStore {
       this,
       async () => {
         await action();
-        await this.load();
+        await this.fetch();
       },
       {
         before: () => {

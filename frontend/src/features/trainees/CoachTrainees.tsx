@@ -1,9 +1,14 @@
 import { observer } from "mobx-react-lite";
 
 import { useStore } from "../../root_store/StoreContext";
+import { Loader } from "../../shared/Loader";
 
 export const CoachTrainees = observer(function CoachTrainees() {
   const { coach } = useStore();
+
+  if (coach.loading) {
+    return <Loader />;
+  }
 
   if (coach.trainees.length === 0) {
     return <p className="hint">Учеников пока нет</p>;

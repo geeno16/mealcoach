@@ -2,8 +2,13 @@ import { observer } from "mobx-react-lite";
 import { Navigate, Outlet } from "react-router-dom";
 
 import { useStore } from "../root_store/StoreContext";
+import { Loader } from "../shared/Loader";
 
-const loading = <div className="screen">Загрузка…</div>;
+const loading = (
+  <div className="screen">
+    <Loader />
+  </div>
+);
 
 export const RequireAuth = observer(function RequireAuth() {
   const { session } = useStore();
