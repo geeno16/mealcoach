@@ -1,5 +1,5 @@
-import { apiClient } from "./client";
-import { type components } from "./schema.gen";
+import { apiClient } from "../../api/client";
+import { type components } from "../../api/schema.gen";
 
 export type PostWrite = components["schemas"]["PostWrite"];
 export type PostRead = components["schemas"]["PostRead"];

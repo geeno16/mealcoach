@@ -20,6 +20,7 @@ from src.user.repository import UserRepository
 
 class PostService:
     def __init__(self, session: AsyncSession):
+        self.session = session
         self.repo = PostRepository(session)
         self.user_repo = UserRepository(session)
         self.picture_repo = PictureRepository(session)
@@ -115,6 +116,15 @@ class PostService:
         post = await self.repo.update_by_id(
             id, data, exclude={"auth_id"}
         )
+        assert post is not None
+
+        if not graded_by_coach:
+            for meal, meal_data in zip(
+                post.meals, data.meals, strict=False
+            ):
+                for key, value in meal_data.model_dump().items():
+                    setattr(meal, key, value)
+            await self.session.commit()
 
         if graded_by_coach:
             await self.notif_repo.create(

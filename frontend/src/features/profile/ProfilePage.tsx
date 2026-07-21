@@ -2,8 +2,9 @@ import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
-import { ApiError, type UserWrite } from "../api";
-import { useStore } from "../root_store/StoreContext";
+import { type UserWrite } from "../../api";
+import { useStore } from "../../root_store/StoreContext";
+import { useAsyncAction } from "../../shared/useAsyncAction";
 
 function isSet<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined;
@@ -19,9 +20,17 @@ export const ProfilePage = observer(function ProfilePage() {
   const [age, setAge] = useState("");
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const [detaching, setDetaching] = useState(false);
+  const {
+    pending,
+    error,
+    setError: setSaveError,
+    run: runSave,
+  } = useAsyncAction();
+  const {
+    pending: detaching,
+    error: detachError,
+    run: runDetach,
+  } = useAsyncAction();
 
   const user = session.user;
   if (!user) return <Navigate to="/app/fork" replace />;
@@ -31,18 +40,10 @@ export const ProfilePage = observer(function ProfilePage() {
     navigate("/app/login", { replace: true });
   };
 
-  const handleDetach = async () => {
-    setError(null);
-    setDetaching(true);
-    try {
-      await session.clearCoach();
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Не удалось открепиться",
-      );
-      setDetaching(false);
-    }
-  };
+  const handleDetach = () =>
+    runDetach(() => session.clearCoach(), {
+      fallbackMessage: "Не удалось открепиться",
+    });
 
   const startEdit = () => {
     setName(user.name);
@@ -50,11 +51,11 @@ export const ProfilePage = observer(function ProfilePage() {
     setAge(user.age?.toString() ?? "");
     setWeight(user.weight?.toString() ?? "");
     setHeight(user.height?.toString() ?? "");
-    setError(null);
+    setSaveError(null);
     setEditing(true);
   };
 
-  const handleSave = async (event: React.FormEvent) => {
+  const handleSave = (event: React.FormEvent) => {
     event.preventDefault();
     const payload: UserWrite = {
       ...user,
@@ -65,16 +66,13 @@ export const ProfilePage = observer(function ProfilePage() {
       height: height ? Number(height) : null,
     };
 
-    setError(null);
-    setPending(true);
-    try {
-      await session.updateUser(payload);
-      setEditing(false);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Не удалось сохранить");
-    } finally {
-      setPending(false);
-    }
+    void runSave(
+      async () => {
+        await session.updateUser(payload);
+        setEditing(false);
+      },
+      { fallbackMessage: "Не удалось сохранить" },
+    );
   };
 
   if (editing) {
@@ -190,7 +188,7 @@ export const ProfilePage = observer(function ProfilePage() {
           )}
         </div>
 
-        {error && <p className="error">{error}</p>}
+        {detachError && <p className="error">{detachError}</p>}
 
         <button
           className="button button-secondary"

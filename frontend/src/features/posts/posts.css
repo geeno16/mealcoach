@@ -1,0 +1,271 @@
+.post-list {
+  column-gap: 16px;
+  columns: 240px;
+}
+
+.post-card {
+  display: block;
+  break-inside: avoid;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+  cursor: pointer;
+  margin: 0 0 16px;
+  overflow: hidden;
+}
+
+.post-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 12%);
+}
+
+.post-thumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.post-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+}
+
+.post-name {
+  margin: 0;
+  font-weight: 600;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.post-desc {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.post-divider {
+  border-top: 1px solid var(--color-border-faint);
+}
+
+.post-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.post-foot-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.post-foot-right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.post-subtle {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.post-stars {
+  display: flex;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.star {
+  color: var(--color-border);
+}
+
+.star-filled {
+  color: var(--color-star);
+}
+
+.post-unrated {
+  color: var(--color-text-muted);
+}
+
+.post-modal {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.post-modal-meals {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.post-modal-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.post-modal .post-detail-title {
+  margin: 0;
+  padding-right: 24px;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.post-detail-title-input {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.post-detail-textarea {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  min-height: 96px;
+  resize: vertical;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.post-detail-grade-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.post-detail-grade-block {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  padding: 12px;
+  min-width: 160px;
+}
+
+.post-detail-grade-label {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.post-detail-comment {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+}
+
+.post-detail-subheading {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.meal-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  padding-bottom: 2px;
+}
+
+.meal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  padding: 8px;
+  overflow: hidden;
+}
+
+.meal-thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.meal-thumb {
+  border-radius: var(--radius);
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+
+.meal-photo-btn {
+  cursor: pointer;
+  color: var(--color-primary);
+  font-size: 10px;
+  text-align: center;
+}
+
+.meal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.meal-name {
+  font-weight: 600;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.meal-name-input {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 5px 6px;
+  font-size: 13px;
+}
+
+.meal-macro-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.meal-macro-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meal-macro-field span {
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.meal-macro-field input {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 4px 6px;
+  width: 100%;
+  font-size: 11px;
+}
+
+.meal-macros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}

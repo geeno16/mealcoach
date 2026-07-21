@@ -2,7 +2,7 @@ import { observer } from "mobx-react-lite";
 import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 
-import { useStore } from "../root_store/StoreContext";
+import { useStore } from "../../root_store/StoreContext";
 
 import { CoachTrainees } from "./CoachTrainees";
 

@@ -2,6 +2,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.picture import PictureRepository, PictureWrite
 from src.post import MealWrite, PostRepository, PostWrite
 from src.user import UserRepository, UserWrite
 from test.helpers import (
@@ -187,7 +188,7 @@ async def test_update_post_put_owner(async_client, auth, post):
             description="Updated description",
             comment="Own comment",
             mark=4,
-            meals=[MealWrite(name="Hacked meal")],
+            meals=[MealWrite(name="Updated meal", cal=100)],
         ),
         async_client,
     )
@@ -198,7 +199,72 @@ async def test_update_post_put_owner(async_client, auth, post):
     assert body["comment"] == "Own comment"
     assert body["mark"] == 4
     assert len(body["meals"]) == 1
-    assert body["meals"][0]["name"] == "Egg"
+    assert body["meals"][0]["name"] == "Updated meal"
+    assert body["meals"][0]["cal"] == 100
+
+
+@pytest.mark.asyncio
+async def test_update_post_put_owner_multi_meal(
+    async_client, auth, user: UserWrite, db_session: AsyncSession
+):
+    await UserRepository(db_session).create(user)
+    repo = PostRepository(db_session)
+    multi_post = await repo.create(
+        PostWrite(
+            auth_id=auth.id,
+            name="Multi",
+            meals=[
+                MealWrite(name="First", cal=100),
+                MealWrite(name="Second", cal=200),
+            ],
+        )
+    )
+
+    await login(auth.email, auth.password, async_client)
+    response = await update_post(
+        multi_post.id,
+        PostWrite(
+            auth_id=auth.id,
+            name="Multi",
+            meals=[
+                MealWrite(name="First updated", cal=150),
+                MealWrite(name="Second updated", cal=250),
+            ],
+        ),
+        async_client,
+    )
+    assert response.status_code == 200
+    meals = response.json()["meals"]
+    assert meals[0]["name"] == "First updated"
+    assert meals[0]["cal"] == 150
+    assert meals[1]["name"] == "Second updated"
+    assert meals[1]["cal"] == 250
+
+
+@pytest.mark.asyncio
+async def test_update_post_put_owner_preserves_picture(
+    async_client, auth, post, db_session: AsyncSession
+):
+    picture = await PictureRepository(db_session).create(
+        PictureWrite(data=b"\xff\xd8\xff\xe0-fake-jpeg-bytes")
+    )
+    meal = post.meals[0]
+    meal.picture_id = picture.id
+    await db_session.commit()
+
+    await login(auth.email, auth.password, async_client)
+    response = await update_post(
+        post.id,
+        PostWrite(
+            auth_id=auth.id,
+            name=post.name,
+            meals=[MealWrite(name="Renamed", cal=100)],
+        ),
+        async_client,
+    )
+    assert response.status_code == 200
+    assert response.json()["meals"][0]["name"] == "Renamed"
+    assert response.json()["meals"][0]["picture_id"] == picture.id
 
 
 @pytest.mark.asyncio

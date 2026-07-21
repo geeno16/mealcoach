@@ -1,6 +1,6 @@
 import { observer } from "mobx-react-lite";
 
-import { useStore } from "../root_store/StoreContext";
+import { useStore } from "../../root_store/StoreContext";
 
 export const CoachTrainees = observer(function CoachTrainees() {
   const { coach } = useStore();

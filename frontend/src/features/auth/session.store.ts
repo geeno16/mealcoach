@@ -9,7 +9,7 @@ import {
   type EmailVerify,
   type UserRead,
   type UserWrite,
-} from "../api";
+} from "../../api";
 
 export type SessionStatus = "loading" | "ready";
 

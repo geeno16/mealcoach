@@ -21,15 +21,21 @@ class BaseRepository[ModelT: Base, WriteT: BaseModel]:
         return instance
 
     async def update_by_id(
-        self, id: int, data: WriteT
+        self,
+        id: int,
+        data: WriteT,
+        exclude: set[str] | None = None,
+        refresh_fields: list[str] | None = None,
     ) -> ModelT | None:
         instance = await self.get_by_id(id)
         if not instance:
             return None
-        for key, value in data.model_dump().items():
+        for key, value in data.model_dump(
+            exclude=exclude or set()
+        ).items():
             setattr(instance, key, value)
         await self.session.commit()
-        await self.session.refresh(instance)
+        await self.session.refresh(instance, refresh_fields)
         return instance
 
     async def delete_by_id(self, id: int) -> bool:

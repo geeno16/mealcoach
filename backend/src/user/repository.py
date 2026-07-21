@@ -36,25 +36,22 @@ class UserRepository(BaseRepository[User, UserWrite]):
         return list(result.scalars().all())
 
     async def update_by_id(
-        self, id: int, data: UserWrite
+        self,
+        id: int,
+        data: UserWrite,
+        exclude: set[str] | None = None,
+        refresh_fields: list[str] | None = None,
     ) -> User | None:
-        user = await self.get_by_id(id)
-
-        if not user:
-            return None
-
-        for key, value in data.model_dump(
-            exclude={
-                "auth_id",
-                "coach_email",
-                "coach_id",
-                "coach_request_id",
-                "role",
-            }
-        ).items():
-            setattr(user, key, value)
-
-        await self.session.commit()
-        await self.session.refresh(user)
-
-        return user
+        base_exclude = {
+            "auth_id",
+            "coach_email",
+            "coach_id",
+            "coach_request_id",
+            "role",
+        }
+        return await super().update_by_id(
+            id,
+            data,
+            exclude=(exclude or set()) | base_exclude,
+            refresh_fields=refresh_fields,
+        )

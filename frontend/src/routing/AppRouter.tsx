@@ -1,17 +1,17 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-import { AppLayout } from "../pages/AppLayout";
-import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
-import { ForkPage } from "../pages/ForkPage";
-import { LandingPage } from "../pages/LandingPage";
-import { LoginPage } from "../pages/LoginPage";
-import { NotificationsPage } from "../pages/NotificationsPage";
-import { PendingPage } from "../pages/PendingPage";
-import { PostsPage } from "../pages/PostsPage";
-import { ProfilePage } from "../pages/ProfilePage";
-import { SignupPage } from "../pages/SignupPage";
-import { StatsPage } from "../pages/StatsPage";
-import { TraineesPage } from "../pages/TraineesPage";
+import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
+import { ForkPage } from "../features/auth/ForkPage";
+import { LandingPage } from "../features/auth/LandingPage";
+import { LoginPage } from "../features/auth/LoginPage";
+import { PendingPage } from "../features/auth/PendingPage";
+import { SignupPage } from "../features/auth/SignupPage";
+import { NotificationsPage } from "../features/notifications/NotificationsPage";
+import { PostsPage } from "../features/posts/PostsPage";
+import { ProfilePage } from "../features/profile/ProfilePage";
+import { StatsPage } from "../features/stats/StatsPage";
+import { TraineesPage } from "../features/trainees/TraineesPage";
+import { AppLayout } from "../shared/AppLayout";
 
 import {
   RequireActive,

@@ -2,16 +2,15 @@ import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { ApiError } from "../api";
-import { useStore } from "../root_store/StoreContext";
+import { useStore } from "../../root_store/StoreContext";
+import { useAsyncAction } from "../../shared/useAsyncAction";
 
 export const PendingPage = observer(function PendingPage() {
   const { session } = useStore();
   const navigate = useNavigate();
 
   const [coachEmail, setCoachEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const { pending, error, run } = useAsyncAction();
 
   const user = session.user;
   if (!user) return null;
@@ -24,33 +23,16 @@ export const PendingPage = observer(function PendingPage() {
   const hasRequest =
     user.coach_request_id !== null && user.coach_request_id !== undefined;
 
-  const handleCancel = async () => {
-    setError(null);
-    setPending(true);
-    try {
-      await session.clearCoach();
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Не удалось отменить заявку",
-      );
-    } finally {
-      setPending(false);
-    }
-  };
+  const handleCancel = () =>
+    run(() => session.clearCoach(), {
+      fallbackMessage: "Не удалось отменить заявку",
+    });
 
-  const handleRequest = async (event: React.FormEvent) => {
+  const handleRequest = (event: React.FormEvent) => {
     event.preventDefault();
-    setError(null);
-    setPending(true);
-    try {
-      await session.requestCoach(coachEmail);
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Не удалось отправить заявку",
-      );
-    } finally {
-      setPending(false);
-    }
+    void run(() => session.requestCoach(coachEmail), {
+      fallbackMessage: "Не удалось отправить заявку",
+    });
   };
 
   if (hasRequest) {

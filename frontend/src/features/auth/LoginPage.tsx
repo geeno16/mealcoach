@@ -2,8 +2,8 @@ import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { ApiError } from "../api";
-import { useStore } from "../root_store/StoreContext";
+import { useStore } from "../../root_store/StoreContext";
+import { useAsyncAction } from "../../shared/useAsyncAction";
 
 export const LoginPage = observer(function LoginPage() {
   const { session } = useStore();
@@ -11,26 +11,22 @@ export const LoginPage = observer(function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const { pending, error, run } = useAsyncAction();
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setPending(true);
-    try {
-      await session.login({ email, password });
-      const target = !session.hasProfile
-        ? "/app/fork"
-        : session.awaitingCoach
-          ? "/app/pending"
-          : "/app/profile";
-      navigate(target, { replace: true });
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Не удалось войти");
-    } finally {
-      setPending(false);
-    }
+    void run(
+      async () => {
+        await session.login({ email, password });
+        const target = !session.hasProfile
+          ? "/app/fork"
+          : session.awaitingCoach
+            ? "/app/pending"
+            : "/app/profile";
+        navigate(target, { replace: true });
+      },
+      { fallbackMessage: "Не удалось войти" },
+    );
   }
 
   return (

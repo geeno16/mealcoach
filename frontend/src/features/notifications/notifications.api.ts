@@ -1,5 +1,5 @@
-import { apiClient } from "./client";
-import { type components } from "./schema.gen";
+import { apiClient } from "../../api/client";
+import { type components } from "../../api/schema.gen";
 
 export type NotificationRead = components["schemas"]["NotificationRead"];
 export type NotificationType = components["schemas"]["NotificationType"];

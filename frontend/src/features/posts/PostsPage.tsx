@@ -1,55 +1,40 @@
 import { observer } from "mobx-react-lite";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
-import { type PostRead } from "../api";
-import { useStore } from "../root_store/StoreContext";
+import { type PostRead } from "../../api";
+import { useStore } from "../../root_store/StoreContext";
 
-function PostMark({ mark }: { mark: number | null | undefined }) {
-  if (mark === null || mark === undefined) {
-    return <span className="post-unrated">Не оценено</span>;
-  }
-  return (
-    <div className="post-stars">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <span key={n} className={n <= mark ? "star star-filled" : "star"}>
-          ★
-        </span>
-      ))}
-    </div>
-  );
-}
+import { PostModal } from "./PostModal";
+import { formatPostDate, mealsLabel, PostMark } from "./post-helpers";
 
-function mealsLabel(count: number): string {
-  const word = count === 1 ? "приём пищи" : "приёма пищи";
-  return `${count} ${word}`;
-}
-
-function formatPostDate(iso: string): string {
-  const date = new Date(iso);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${day}.${month} ${hours}:${minutes}`;
-}
-
-function PostCard({ post }: { post: PostRead }) {
+const PostCard = observer(function PostCard({
+  post,
+  onOpen,
+}: {
+  post: PostRead;
+  onOpen: () => void;
+}) {
+  const { posts } = useStore();
   const meals = post.meals ?? [];
-  const pictureId = meals.find(
+  const pictureMeal = meals.find(
     (meal) => meal.picture_id !== null && meal.picture_id !== undefined,
-  )?.picture_id;
-  const hasPicture = pictureId !== null && pictureId !== undefined;
+  );
   const commentLabel = post.comment
     ? "Прокомментировано"
     : "Не прокомментировано";
 
+  const hasPicture =
+    pictureMeal !== undefined &&
+    pictureMeal.picture_id !== null &&
+    pictureMeal.picture_id !== undefined;
+
   return (
-    <article className="post-card">
+    <article className="post-card" onClick={onOpen}>
       {hasPicture && (
         <div className="post-thumb">
           <img
-            src={`/api/pictures/${pictureId}`}
+            src={posts.pictureUrl(pictureMeal.picture_id!, pictureMeal.id)}
             alt=""
             loading="lazy"
             decoding="async"
@@ -75,17 +60,21 @@ function PostCard({ post }: { post: PostRead }) {
       </div>
     </article>
   );
-}
+});
 
 export const PostsPage = observer(function PostsPage() {
   const { session, posts } = useStore();
   const user = session.user;
+  const [openId, setOpenId] = useState<number | null>(null);
 
   useEffect(() => {
     if (user) void posts.load(user.auth_id);
   }, [posts, user]);
 
   if (!user) return <Navigate to="/app/fork" replace />;
+
+  const openPost =
+    openId !== null ? posts.items.find((p) => p.id === openId) : undefined;
 
   return (
     <div className="page">
@@ -98,9 +87,17 @@ export const PostsPage = observer(function PostsPage() {
       ) : (
         <div className="post-list">
           {posts.items.map((post) => (
-            <PostCard post={post} key={post.id} />
+            <PostCard
+              post={post}
+              key={post.id}
+              onOpen={() => setOpenId(post.id)}
+            />
           ))}
         </div>
+      )}
+
+      {openPost && (
+        <PostModal post={openPost} onClose={() => setOpenId(null)} />
       )}
     </div>
   );

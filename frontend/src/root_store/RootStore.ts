@@ -1,9 +1,9 @@
 import { makeAutoObservable } from "mobx";
 
-import { CoachStore } from "../stores/coach.store";
-import { NotificationStore } from "../stores/notification.store";
-import { PostsStore } from "../stores/posts.store";
-import { SessionStore } from "../stores/session.store";
+import { SessionStore } from "../features/auth/session.store";
+import { NotificationStore } from "../features/notifications/notification.store";
+import { PostsStore } from "../features/posts/posts.store";
+import { CoachStore } from "../features/trainees/coach.store";
 
 export class RootStore {
   session: SessionStore;

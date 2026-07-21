@@ -1,6 +1,7 @@
 .DS_Store
 .env
 .claude/
+CLAUDE.md
 .pytest_cache/
 .ruff_cache/
 __pycache__/

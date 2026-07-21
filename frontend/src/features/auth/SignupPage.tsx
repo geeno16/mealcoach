@@ -2,8 +2,8 @@ import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { ApiError } from "../api";
-import { useStore } from "../root_store/StoreContext";
+import { useStore } from "../../root_store/StoreContext";
+import { useAsyncAction } from "../../shared/useAsyncAction";
 
 type Phase = "credentials" | "code";
 
@@ -15,49 +15,35 @@ export const SignupPage = observer(function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const { pending, error, run } = useAsyncAction();
 
-  async function handleRegister(event: React.FormEvent) {
+  function handleRegister(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setPending(true);
-    try {
-      await session.register({ email, password });
-      setPhase("code");
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Не удалось зарегистрироваться",
-      );
-    } finally {
-      setPending(false);
-    }
+    void run(
+      async () => {
+        await session.register({ email, password });
+        setPhase("code");
+      },
+      { fallbackMessage: "Не удалось зарегистрироваться" },
+    );
   }
 
-  async function handleVerify(event: React.FormEvent) {
+  function handleVerify(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setPending(true);
-    try {
-      await session.verifyEmail({ email, code });
-      await session.login({ email, password });
-      navigate("/app/fork", { replace: true });
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Неверный код");
-    } finally {
-      setPending(false);
-    }
+    void run(
+      async () => {
+        await session.verifyEmail({ email, code });
+        await session.login({ email, password });
+        navigate("/app/fork", { replace: true });
+      },
+      { fallbackMessage: "Неверный код" },
+    );
   }
 
-  async function handleResend() {
-    setError(null);
-    try {
-      await session.resendCode({ email, password });
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Не удалось отправить код",
-      );
-    }
+  function handleResend() {
+    void run(() => session.resendCode({ email, password }), {
+      fallbackMessage: "Не удалось отправить код",
+    });
   }
 
   if (phase === "code") {

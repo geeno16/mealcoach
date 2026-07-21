@@ -2,8 +2,9 @@ import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { ApiError, type UserRole, type UserWrite } from "../api";
-import { useStore } from "../root_store/StoreContext";
+import { type UserRole, type UserWrite } from "../../api";
+import { useStore } from "../../root_store/StoreContext";
+import { useAsyncAction } from "../../shared/useAsyncAction";
 
 export const ForkPage = observer(function ForkPage() {
   const { session } = useStore();
@@ -16,8 +17,7 @@ export const ForkPage = observer(function ForkPage() {
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
   const [coachEmail, setCoachEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const { pending, error, run } = useAsyncAction();
 
   async function handleLogout() {
     await session.logout();
@@ -26,7 +26,7 @@ export const ForkPage = observer(function ForkPage() {
 
   if (!session.auth) return null;
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!session.auth) return;
 
@@ -39,20 +39,15 @@ export const ForkPage = observer(function ForkPage() {
       if (coachEmail) payload.coach_email = coachEmail;
     }
 
-    setError(null);
-    setPending(true);
-    try {
-      await session.createUser(payload);
-      navigate(session.awaitingCoach ? "/app/pending" : "/app/profile", {
-        replace: true,
-      });
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Не удалось создать профиль",
-      );
-    } finally {
-      setPending(false);
-    }
+    void run(
+      async () => {
+        await session.createUser(payload);
+        navigate(session.awaitingCoach ? "/app/pending" : "/app/profile", {
+          replace: true,
+        });
+      },
+      { fallbackMessage: "Не удалось создать профиль" },
+    );
   }
 
   return (

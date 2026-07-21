@@ -2,8 +2,8 @@ import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { ApiError } from "../api";
-import { useStore } from "../root_store/StoreContext";
+import { useStore } from "../../root_store/StoreContext";
+import { useAsyncAction } from "../../shared/useAsyncAction";
 
 type Phase = "request" | "reset";
 
@@ -15,39 +15,28 @@ export const ForgotPasswordPage = observer(function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const { pending, error, run } = useAsyncAction();
 
-  async function handleRequest(event: React.FormEvent) {
+  function handleRequest(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setPending(true);
-    try {
-      await session.forgotPassword(email);
-      setPhase("reset");
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Не удалось отправить код",
-      );
-    } finally {
-      setPending(false);
-    }
+    void run(
+      async () => {
+        await session.forgotPassword(email);
+        setPhase("reset");
+      },
+      { fallbackMessage: "Не удалось отправить код" },
+    );
   }
 
-  async function handleReset(event: React.FormEvent) {
+  function handleReset(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setPending(true);
-    try {
-      await session.resetPassword(email, code, password);
-      navigate("/app/login", { replace: true });
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Не удалось сбросить пароль",
-      );
-    } finally {
-      setPending(false);
-    }
+    void run(
+      async () => {
+        await session.resetPassword(email, code, password);
+        navigate("/app/login", { replace: true });
+      },
+      { fallbackMessage: "Не удалось сбросить пароль" },
+    );
   }
 
   if (phase === "reset") {

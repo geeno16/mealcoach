@@ -21,30 +21,28 @@ class PostRepository(BaseRepository[Post, PostWrite]):
 
     async def get_all_by_auth_id(self, auth_id: int) -> list[Post]:
         result = await self.session.execute(
-            select(Post).where(Post.auth_id == auth_id)
+            select(Post)
+            .where(Post.auth_id == auth_id)
+            .order_by(Post.created_at.desc())
         )
         return list(result.scalars().all())
 
     async def update_by_id(
-        self, id: int, data: PostWrite, exclude: set[str] | None = None
+        self,
+        id: int,
+        data: PostWrite,
+        exclude: set[str] | None = None,
+        refresh_fields: list[str] | None = None,
     ) -> Post | None:
-        post = await self.get_by_id(id)
-
-        if not post:
-            return None
-
         if exclude is None:
             exclude = {"auth_id"}
 
-        for key, value in data.model_dump(
-            exclude=exclude | {"meals"}
-        ).items():
-            setattr(post, key, value)
-
-        await self.session.commit()
-        await self.session.refresh(post, ["updated_at"])
-
-        return post
+        return await super().update_by_id(
+            id,
+            data,
+            exclude=exclude | {"meals"},
+            refresh_fields=refresh_fields or ["updated_at"],
+        )
 
 
 class MealRepository(BaseRepository[Meal, MealWrite]):

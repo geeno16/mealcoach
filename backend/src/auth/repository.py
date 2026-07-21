@@ -12,10 +12,17 @@ class AuthRepository(BaseRepository[Auth, AuthWrite]):
         return await super().create(self._with_hashed_password(data))
 
     async def update_by_id(
-        self, id: int, data: AuthWrite
+        self,
+        id: int,
+        data: AuthWrite,
+        exclude: set[str] | None = None,
+        refresh_fields: list[str] | None = None,
     ) -> Auth | None:
         return await super().update_by_id(
-            id, self._with_hashed_password(data)
+            id,
+            self._with_hashed_password(data),
+            exclude=exclude,
+            refresh_fields=refresh_fields,
         )
 
     def _with_hashed_password(self, data: AuthWrite) -> AuthWrite:

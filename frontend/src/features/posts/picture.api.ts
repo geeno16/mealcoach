@@ -1,5 +1,5 @@
-import { apiClient } from "./client";
-import { type components } from "./schema.gen";
+import { apiClient } from "../../api/client";
+import { type components } from "../../api/schema.gen";
 
 export type PictureRead = components["schemas"]["PictureRead"];
 
@@ -17,6 +17,7 @@ export const pictureApi = {
       "/api/meals/{meal_id}/picture",
       {
         params: { path: { meal_id: mealId } },
+        headers: { "Content-Type": "image/jpeg" },
         body: data,
         bodySerializer: (body) => body,
       },
@@ -29,6 +30,7 @@ export const pictureApi = {
       "/api/users/{user_id}/avatar",
       {
         params: { path: { user_id: userId } },
+        headers: { "Content-Type": "image/jpeg" },
         body: data,
         bodySerializer: (body) => body,
       },
