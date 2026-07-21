@@ -19,7 +19,7 @@ class MealBase(BaseModel):
 
 
 class MealWrite(MealBase):
-    pass
+    id: int | None = Field(default=None)
 
 
 class MealRead(MealBase):

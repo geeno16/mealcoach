@@ -10,7 +10,10 @@ class PostRepository(BaseRepository[Post, PostWrite]):
 
     async def create(self, data: PostWrite) -> Post:
         post = Post(**data.model_dump(exclude={"meals"}))
-        post.meals = [Meal(**meal.model_dump()) for meal in data.meals]
+        post.meals = [
+            Meal(**meal.model_dump(exclude={"id"}))
+            for meal in data.meals
+        ]
 
         self.session.add(post)
         await self.session.commit()

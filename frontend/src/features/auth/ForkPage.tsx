@@ -2,22 +2,19 @@ import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { type UserRole, type UserWrite } from "../../api";
 import { useStore } from "../../root_store/StoreContext";
-import { useAsyncAction } from "../../shared/useAsyncAction";
+
+import { ForkFormStore } from "./fork.store";
+
+function FieldError({ message }: { message: string | null }) {
+  if (!message) return null;
+  return <span className="field-error">{message}</span>;
+}
 
 export const ForkPage = observer(function ForkPage() {
   const { session } = useStore();
   const navigate = useNavigate();
-
-  const [role, setRole] = useState<UserRole>("trainee");
-  const [name, setName] = useState("");
-  const [surname, setSurname] = useState("");
-  const [age, setAge] = useState("");
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState("");
-  const [coachEmail, setCoachEmail] = useState("");
-  const { pending, error, run } = useAsyncAction();
+  const [form] = useState(() => new ForkFormStore(session));
 
   async function handleLogout() {
     await session.logout();
@@ -26,28 +23,14 @@ export const ForkPage = observer(function ForkPage() {
 
   if (!session.auth) return null;
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!session.auth) return;
-
-    const payload: UserWrite = { auth_id: session.auth.id, role, name };
-    if (surname) payload.surname = surname;
-    if (role === "trainee") {
-      if (age) payload.age = Number(age);
-      if (weight) payload.weight = Number(weight);
-      if (height) payload.height = Number(height);
-      if (coachEmail) payload.coach_email = coachEmail;
+    const created = await form.submit();
+    if (created) {
+      navigate(session.awaitingCoach ? "/app/pending" : "/app/profile", {
+        replace: true,
+      });
     }
-
-    void run(
-      async () => {
-        await session.createUser(payload);
-        navigate(session.awaitingCoach ? "/app/pending" : "/app/profile", {
-          replace: true,
-        });
-      },
-      { fallbackMessage: "Не удалось создать профиль" },
-    );
   }
 
   return (
@@ -61,8 +44,8 @@ export const ForkPage = observer(function ForkPage() {
               type="radio"
               name="role"
               value="trainee"
-              checked={role === "trainee"}
-              onChange={() => setRole("trainee")}
+              checked={form.role === "trainee"}
+              onChange={() => form.setRole("trainee")}
             />
             <span>Ученик</span>
           </label>
@@ -71,8 +54,8 @@ export const ForkPage = observer(function ForkPage() {
               type="radio"
               name="role"
               value="coach"
-              checked={role === "coach"}
-              onChange={() => setRole("coach")}
+              checked={form.role === "coach"}
+              onChange={() => form.setRole("coach")}
             />
             <span>Тренер</span>
           </label>
@@ -81,62 +64,73 @@ export const ForkPage = observer(function ForkPage() {
         <label className="field">
           <span>Имя</span>
           <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={form.name}
+            onChange={(e) => form.setName(e.target.value)}
             required
           />
+          <FieldError message={form.submitted ? form.nameError : null} />
         </label>
 
         <label className="field">
           <span>Фамилия</span>
-          <input value={surname} onChange={(e) => setSurname(e.target.value)} />
+          <input
+            value={form.surname}
+            onChange={(e) => form.setSurname(e.target.value)}
+          />
+          <FieldError message={form.submitted ? form.surnameError : null} />
         </label>
 
-        {role === "trainee" && (
+        {form.isTrainee && (
           <>
             <label className="field">
               <span>Возраст</span>
               <input
                 type="number"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
+                value={form.age}
+                onChange={(e) => form.setAge(e.target.value)}
               />
+              <FieldError message={form.submitted ? form.ageError : null} />
             </label>
 
             <label className="field">
               <span>Вес, кг</span>
               <input
                 type="number"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                value={form.weight}
+                onChange={(e) => form.setWeight(e.target.value)}
               />
+              <FieldError message={form.submitted ? form.weightError : null} />
             </label>
 
             <label className="field">
               <span>Рост, см</span>
               <input
                 type="number"
-                value={height}
-                onChange={(e) => setHeight(e.target.value)}
+                value={form.height}
+                onChange={(e) => form.setHeight(e.target.value)}
               />
+              <FieldError message={form.submitted ? form.heightError : null} />
             </label>
 
             <label className="field">
               <span>Email тренера</span>
               <input
                 type="email"
-                value={coachEmail}
-                onChange={(e) => setCoachEmail(e.target.value)}
+                value={form.coachEmail}
+                onChange={(e) => form.setCoachEmail(e.target.value)}
                 required
+              />
+              <FieldError
+                message={form.submitted ? form.coachEmailError : null}
               />
             </label>
           </>
         )}
 
-        {error && <p className="error">{error}</p>}
+        {form.error && <p className="error">{form.error}</p>}
 
-        <button className="button" type="submit" disabled={pending}>
-          {pending ? "…" : "Продолжить"}
+        <button className="button" type="submit" disabled={form.pending}>
+          {form.pending ? "…" : "Продолжить"}
         </button>
 
         <button

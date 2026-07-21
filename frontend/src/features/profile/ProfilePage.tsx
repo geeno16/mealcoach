@@ -2,30 +2,25 @@ import { observer } from "mobx-react-lite";
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
-import { type UserWrite } from "../../api";
 import { useStore } from "../../root_store/StoreContext";
 import { useAsyncAction } from "../../shared/useAsyncAction";
+
+import { ProfileEditStore } from "./profile-edit.store";
 
 function isSet<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined;
 }
 
+function FieldError({ message }: { message: string | null }) {
+  if (!message) return null;
+  return <span className="field-error">{message}</span>;
+}
+
 export const ProfilePage = observer(function ProfilePage() {
   const { session } = useStore();
   const navigate = useNavigate();
+  const [edit] = useState(() => new ProfileEditStore(session));
 
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState("");
-  const [surname, setSurname] = useState("");
-  const [age, setAge] = useState("");
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState("");
-  const {
-    pending,
-    error,
-    setError: setSaveError,
-    run: runSave,
-  } = useAsyncAction();
   const {
     pending: detaching,
     error: detachError,
@@ -45,37 +40,12 @@ export const ProfilePage = observer(function ProfilePage() {
       fallbackMessage: "Не удалось открепиться",
     });
 
-  const startEdit = () => {
-    setName(user.name);
-    setSurname(user.surname ?? "");
-    setAge(user.age?.toString() ?? "");
-    setWeight(user.weight?.toString() ?? "");
-    setHeight(user.height?.toString() ?? "");
-    setSaveError(null);
-    setEditing(true);
-  };
-
   const handleSave = (event: React.FormEvent) => {
     event.preventDefault();
-    const payload: UserWrite = {
-      ...user,
-      name,
-      surname: surname || null,
-      age: age ? Number(age) : null,
-      weight: weight ? Number(weight) : null,
-      height: height ? Number(height) : null,
-    };
-
-    void runSave(
-      async () => {
-        await session.updateUser(payload);
-        setEditing(false);
-      },
-      { fallbackMessage: "Не удалось сохранить" },
-    );
+    void edit.save();
   };
 
-  if (editing) {
+  if (edit.editing) {
     return (
       <div className="screen">
         <form className="card" onSubmit={handleSave}>
@@ -84,18 +54,20 @@ export const ProfilePage = observer(function ProfilePage() {
           <label className="field">
             <span>Имя</span>
             <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={edit.name}
+              onChange={(e) => edit.setName(e.target.value)}
               required
             />
+            <FieldError message={edit.submitted ? edit.nameError : null} />
           </label>
 
           <label className="field">
             <span>Фамилия</span>
             <input
-              value={surname}
-              onChange={(e) => setSurname(e.target.value)}
+              value={edit.surname}
+              onChange={(e) => edit.setSurname(e.target.value)}
             />
+            <FieldError message={edit.submitted ? edit.surnameError : null} />
           </label>
 
           {user.role === "trainee" && (
@@ -104,17 +76,21 @@ export const ProfilePage = observer(function ProfilePage() {
                 <span>Возраст</span>
                 <input
                   type="number"
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
+                  value={edit.age}
+                  onChange={(e) => edit.setAge(e.target.value)}
                 />
+                <FieldError message={edit.submitted ? edit.ageError : null} />
               </label>
 
               <label className="field">
                 <span>Вес, кг</span>
                 <input
                   type="number"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
+                  value={edit.weight}
+                  onChange={(e) => edit.setWeight(e.target.value)}
+                />
+                <FieldError
+                  message={edit.submitted ? edit.weightError : null}
                 />
               </label>
 
@@ -122,22 +98,25 @@ export const ProfilePage = observer(function ProfilePage() {
                 <span>Рост, см</span>
                 <input
                   type="number"
-                  value={height}
-                  onChange={(e) => setHeight(e.target.value)}
+                  value={edit.height}
+                  onChange={(e) => edit.setHeight(e.target.value)}
+                />
+                <FieldError
+                  message={edit.submitted ? edit.heightError : null}
                 />
               </label>
             </>
           )}
 
-          {error && <p className="error">{error}</p>}
+          {edit.error && <p className="error">{edit.error}</p>}
 
-          <button className="button" type="submit" disabled={pending}>
-            {pending ? "…" : "Сохранить"}
+          <button className="button" type="submit" disabled={edit.pending}>
+            {edit.pending ? "…" : "Сохранить"}
           </button>
           <button
             className="button button-secondary"
             type="button"
-            onClick={() => setEditing(false)}
+            onClick={() => edit.cancelEdit()}
           >
             Отмена
           </button>
@@ -193,7 +172,7 @@ export const ProfilePage = observer(function ProfilePage() {
         <button
           className="button button-secondary"
           type="button"
-          onClick={startEdit}
+          onClick={() => edit.startEdit()}
         >
           Редактировать
         </button>

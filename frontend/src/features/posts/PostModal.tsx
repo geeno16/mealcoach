@@ -1,49 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { observer } from "mobx-react-lite";
+import { useEffect, useState } from "react";
 
-import { type MealRead, type PostRead, type PostWrite } from "../../api";
+import { type MealRead, type PostRead } from "../../api";
 import { useStore } from "../../root_store/StoreContext";
 import { ConfirmDialog, Modal } from "../../shared/Modal";
-import { useAsyncAction } from "../../shared/useAsyncAction";
+import { MAX_POST_MEALS, MIN_POST_MEALS } from "../../shared/validation";
 
+import { PostDraftStore, type MealDraft } from "./post-draft.store";
 import { formatPostDate, mealsLabel, PostMark } from "./post-helpers";
-
-const MIN_POST_MEALS = 1;
-const MAX_POST_MEALS = 3;
-
-type MealDraft = {
-  id: number;
-  name: string;
-  cal: string;
-  protein: string;
-  fat: string;
-  carbohydrate: string;
-};
-
-function emptyDraft(id: number): MealDraft {
-  return { id, name: "", cal: "", protein: "", fat: "", carbohydrate: "" };
-}
-
-function toDraft(meal: MealRead): MealDraft {
-  return {
-    id: meal.id,
-    name: meal.name ?? "",
-    cal: meal.cal?.toString() ?? "",
-    protein: meal.protein?.toString() ?? "",
-    fat: meal.fat?.toString() ?? "",
-    carbohydrate: meal.carbohydrate?.toString() ?? "",
-  };
-}
-
-function toNumber(value: string): number | null {
-  return value === "" ? null : Number(value);
-}
 
 function macro(value: number | null | undefined, unit: string): string {
   return value === null || value === undefined ? "—" : `${value} ${unit}`;
 }
 
-function revokePreviews(previews: Record<number, string>): void {
-  Object.values(previews).forEach((url) => URL.revokeObjectURL(url));
+function FieldError({ message }: { message: string | null }) {
+  if (!message) return null;
+  return <span className="field-error">{message}</span>;
 }
 
 function MealPhoto({
@@ -95,7 +67,7 @@ function MealPhoto({
   );
 }
 
-export function PostModal({
+export const PostModal = observer(function PostModal({
   post,
   onClose,
 }: {
@@ -103,260 +75,127 @@ export function PostModal({
   onClose: () => void;
 }) {
   const { posts, session } = useStore();
-  const isCreate = post === null;
+  const [draft] = useState(() => new PostDraftStore(posts, session, post));
+  const isCreate = draft.isCreate;
 
-  const [editing, setEditing] = useState(isCreate);
-  const [name, setName] = useState(post?.name ?? "");
-  const [description, setDescription] = useState(post?.description ?? "");
-  const nextDraftId = useRef(-1);
-  const [mealDrafts, setMealDrafts] = useState<MealDraft[]>(() =>
-    isCreate ? [emptyDraft(nextDraftId.current--)] : [],
-  );
-  const [photoFiles, setPhotoFiles] = useState<Record<number, File>>({});
-  const [photoPreviews, setPhotoPreviews] = useState<Record<number, string>>(
-    {},
-  );
-  const { pending, error, setError, run } = useAsyncAction();
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [confirmingClose, setConfirmingClose] = useState(false);
+  useEffect(() => () => draft.dispose(), [draft]);
 
-  const photoPreviewsRef = useRef(photoPreviews);
-  photoPreviewsRef.current = photoPreviews;
-
-  useEffect(() => {
-    return () => revokePreviews(photoPreviewsRef.current);
-  }, []);
-
-  const meals = post?.meals ?? [];
-
-  const resetPhotoDrafts = () => {
-    setPhotoPreviews((previews) => {
-      revokePreviews(previews);
-      return {};
-    });
-    setPhotoFiles({});
-  };
-
-  const startEdit = () => {
-    setName(post!.name);
-    setDescription(post!.description ?? "");
-    setMealDrafts(meals.map(toDraft));
-    resetPhotoDrafts();
-    setError(null);
-    setEditing(true);
-  };
-
-  const cancelEdit = () => {
-    resetPhotoDrafts();
-    setEditing(false);
-  };
+  const meals = draft.meals;
 
   const requestClose = () => {
-    if (pending) return;
-    if (isCreate) {
-      setConfirmingClose(true);
-      return;
-    }
-    onClose();
+    if (draft.beginClose()) onClose();
   };
 
-  const updateMealDraft = (id: number, patch: Partial<MealDraft>) => {
-    setMealDrafts((drafts) =>
-      drafts.map((d) => (d.id === id ? { ...d, ...patch } : d)),
-    );
-  };
-
-  const addMealDraft = () => {
-    setMealDrafts((drafts) => {
-      if (drafts.length >= MAX_POST_MEALS) return drafts;
-      return [...drafts, emptyDraft(nextDraftId.current--)];
-    });
-  };
-
-  const removeMealDraft = (id: number) => {
-    setMealDrafts((drafts) => {
-      if (drafts.length <= MIN_POST_MEALS) return drafts;
-      return drafts.filter((d) => d.id !== id);
-    });
-    setPhotoFiles((files) => {
-      if (!(id in files)) return files;
-      const { [id]: _removed, ...rest } = files;
-      return rest;
-    });
-    setPhotoPreviews((previews) => {
-      const url = previews[id];
-      if (!url) return previews;
-      URL.revokeObjectURL(url);
-      const { [id]: _removed, ...rest } = previews;
-      return rest;
-    });
-  };
-
-  const selectMealPhoto = (mealId: number, file: File) => {
-    setPhotoFiles((files) => ({ ...files, [mealId]: file }));
-    setPhotoPreviews((previews) => {
-      const next = { ...previews };
-      const old = next[mealId];
-      if (old) URL.revokeObjectURL(old);
-      next[mealId] = URL.createObjectURL(file);
-      return next;
-    });
-  };
-
-  const handleDelete = () =>
-    run(
-      async () => {
-        await posts.deletePost(post!.id);
-        onClose();
-      },
-      {
-        fallbackMessage: "Не удалось удалить",
-        onError: () => setConfirmingDelete(false),
-      },
-    );
-
-  const handleUpdate = () =>
-    run(
-      async () => {
-        for (const [mealId, file] of Object.entries(photoFiles)) {
-          await posts.setMealPicture(post!.id, Number(mealId), file);
-        }
-
-        const payload: PostWrite = {
-          auth_id: post!.auth_id,
-          name,
-          description: description || null,
-          mark: post!.mark,
-          comment: post!.comment,
-          meals: mealDrafts.map((d) => ({
-            name: d.name || null,
-            cal: toNumber(d.cal),
-            protein: toNumber(d.protein),
-            fat: toNumber(d.fat),
-            carbohydrate: toNumber(d.carbohydrate),
-          })),
-        };
-        await posts.updatePost(post!.id, payload);
-
-        resetPhotoDrafts();
-        setEditing(false);
-      },
-      { fallbackMessage: "Не удалось сохранить" },
-    );
-
-  const handleCreate = () =>
-    run(
-      async () => {
-        const payload: PostWrite = {
-          auth_id: session.user!.auth_id,
-          name,
-          description: description || null,
-          meals: mealDrafts.map((d) => ({
-            name: d.name || null,
-            cal: toNumber(d.cal),
-            protein: toNumber(d.protein),
-            fat: toNumber(d.fat),
-            carbohydrate: toNumber(d.carbohydrate),
-          })),
-        };
-        const created = await posts.createPost(payload);
-
-        for (const [index, draft] of mealDrafts.entries()) {
-          const file = photoFiles[draft.id];
-          const createdMeal = created.meals?.[index];
-          if (file && createdMeal) {
-            await posts.setMealPicture(created.id, createdMeal.id, file);
+  const renderMealFields = (mealDraft: MealDraft) => {
+    const errors = draft.submitted
+      ? draft.mealErrors(mealDraft)
+      : { name: null, cal: null, protein: null, fat: null, carbohydrate: null };
+    return (
+      <>
+        <input
+          className="meal-name-input"
+          value={mealDraft.name}
+          onChange={(e) =>
+            draft.updateMealDraft(mealDraft.id, { name: e.target.value })
           }
-        }
-
-        resetPhotoDrafts();
-        onClose();
-      },
-      { fallbackMessage: "Не удалось создать пост" },
+          placeholder="Название"
+        />
+        <FieldError message={errors.name} />
+        <div className="meal-macro-inputs">
+          <label className="meal-macro-field">
+            <span>Ккал</span>
+            <input
+              type="number"
+              value={mealDraft.cal}
+              onChange={(e) =>
+                draft.updateMealDraft(mealDraft.id, { cal: e.target.value })
+              }
+            />
+            <FieldError message={errors.cal} />
+          </label>
+          <label className="meal-macro-field">
+            <span>Белки</span>
+            <input
+              type="number"
+              value={mealDraft.protein}
+              onChange={(e) =>
+                draft.updateMealDraft(mealDraft.id, {
+                  protein: e.target.value,
+                })
+              }
+            />
+            <FieldError message={errors.protein} />
+          </label>
+          <label className="meal-macro-field">
+            <span>Жиры</span>
+            <input
+              type="number"
+              value={mealDraft.fat}
+              onChange={(e) =>
+                draft.updateMealDraft(mealDraft.id, { fat: e.target.value })
+              }
+            />
+            <FieldError message={errors.fat} />
+          </label>
+          <label className="meal-macro-field">
+            <span>Углеводы</span>
+            <input
+              type="number"
+              value={mealDraft.carbohydrate}
+              onChange={(e) =>
+                draft.updateMealDraft(mealDraft.id, {
+                  carbohydrate: e.target.value,
+                })
+              }
+            />
+            <FieldError message={errors.carbohydrate} />
+          </label>
+        </div>
+      </>
     );
-
-  const renderMealFields = (draft: MealDraft) => (
-    <>
-      <input
-        className="meal-name-input"
-        value={draft.name}
-        onChange={(e) => updateMealDraft(draft.id, { name: e.target.value })}
-        placeholder="Название"
-      />
-      <div className="meal-macro-inputs">
-        <label className="meal-macro-field">
-          <span>Ккал</span>
-          <input
-            type="number"
-            value={draft.cal}
-            onChange={(e) => updateMealDraft(draft.id, { cal: e.target.value })}
-          />
-        </label>
-        <label className="meal-macro-field">
-          <span>Белки</span>
-          <input
-            type="number"
-            value={draft.protein}
-            onChange={(e) =>
-              updateMealDraft(draft.id, { protein: e.target.value })
-            }
-          />
-        </label>
-        <label className="meal-macro-field">
-          <span>Жиры</span>
-          <input
-            type="number"
-            value={draft.fat}
-            onChange={(e) => updateMealDraft(draft.id, { fat: e.target.value })}
-          />
-        </label>
-        <label className="meal-macro-field">
-          <span>Углеводы</span>
-          <input
-            type="number"
-            value={draft.carbohydrate}
-            onChange={(e) =>
-              updateMealDraft(draft.id, { carbohydrate: e.target.value })
-            }
-          />
-        </label>
-      </div>
-    </>
-  );
+  };
 
   return (
     <Modal onClose={requestClose}>
       <div className="post-modal">
-        {editing ? (
-          <input
-            className="post-detail-title-input"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Название поста"
-            required
-          />
+        {draft.editing ? (
+          <>
+            <input
+              className="post-detail-title-input"
+              value={draft.name}
+              onChange={(e) => draft.setName(e.target.value)}
+              placeholder="Название поста"
+              required
+            />
+            <FieldError message={draft.submitted ? draft.nameError : null} />
+          </>
         ) : (
-          <h1 className="post-detail-title">{post!.name}</h1>
+          post && <h1 className="post-detail-title">{post.name}</h1>
         )}
 
-        {!isCreate && (
+        {post && (
           <span className="post-subtle">
             {formatPostDate(post.created_at)} · {mealsLabel(meals.length)}
           </span>
         )}
 
-        {editing ? (
-          <textarea
-            className="post-detail-textarea"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Описание"
-          />
+        {draft.editing ? (
+          <>
+            <textarea
+              className="post-detail-textarea"
+              value={draft.description}
+              onChange={(e) => draft.setDescription(e.target.value)}
+              placeholder="Описание"
+            />
+            <FieldError
+              message={draft.submitted ? draft.descriptionError : null}
+            />
+          </>
         ) : (
-          post!.description && <p className="post-desc">{post!.description}</p>
+          post?.description && <p className="post-desc">{post.description}</p>
         )}
 
-        {!isCreate && (
+        {post && (
           <>
             <div className="post-divider" />
 
@@ -383,66 +222,65 @@ export function PostModal({
           <h2 className="post-detail-subheading">Милы</h2>
 
           <div className="meal-list">
-            {isCreate
-              ? mealDrafts.map((draft) => (
-                  <div className="meal-card" key={draft.id}>
-                    <MealPhoto
-                      meal={null}
-                      editable
-                      previewSrc={photoPreviews[draft.id]}
-                      pictureUrl={posts.pictureUrl}
-                      onSelectFile={(file) => selectMealPhoto(draft.id, file)}
-                    />
-                    <div className="meal-info">{renderMealFields(draft)}</div>
-                    {mealDrafts.length > MIN_POST_MEALS && (
-                      <button
-                        className="meal-remove-btn"
-                        type="button"
-                        onClick={() => removeMealDraft(draft.id)}
-                        aria-label="Удалить мил"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))
-              : meals.map((meal) => {
-                  const draft = mealDrafts.find((d) => d.id === meal.id);
+            {draft.editing
+              ? draft.mealDrafts.map((mealDraft) => {
+                  const originalMeal =
+                    meals.find((m) => m.id === mealDraft.id) ?? null;
                   return (
-                    <div className="meal-card" key={meal.id}>
+                    <div className="meal-card" key={mealDraft.id}>
                       <MealPhoto
-                        meal={meal}
-                        editable={editing}
-                        previewSrc={photoPreviews[meal.id]}
+                        meal={originalMeal}
+                        editable
+                        previewSrc={draft.photoPreviews[mealDraft.id]}
                         pictureUrl={posts.pictureUrl}
-                        onSelectFile={(file) => selectMealPhoto(meal.id, file)}
+                        onSelectFile={(file) =>
+                          draft.selectMealPhoto(mealDraft.id, file)
+                        }
                       />
                       <div className="meal-info">
-                        {editing && draft ? (
-                          renderMealFields(draft)
-                        ) : (
-                          <>
-                            <span className="meal-name">
-                              {meal.name ?? "Без названия"}
-                            </span>
-                            <div className="meal-macros">
-                              <span>{macro(meal.cal, "ккал")}</span>
-                              <span>Б: {macro(meal.protein, "г")}</span>
-                              <span>Ж: {macro(meal.fat, "г")}</span>
-                              <span>У: {macro(meal.carbohydrate, "г")}</span>
-                            </div>
-                          </>
-                        )}
+                        {renderMealFields(mealDraft)}
                       </div>
+                      {draft.mealDrafts.length > MIN_POST_MEALS && (
+                        <button
+                          className="meal-remove-btn"
+                          type="button"
+                          onClick={() => draft.removeMealDraft(mealDraft.id)}
+                          aria-label="Удалить мил"
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
                   );
-                })}
+                })
+              : meals.map((meal) => (
+                  <div className="meal-card" key={meal.id}>
+                    <MealPhoto
+                      meal={meal}
+                      editable={false}
+                      previewSrc={undefined}
+                      pictureUrl={posts.pictureUrl}
+                      onSelectFile={() => {}}
+                    />
+                    <div className="meal-info">
+                      <span className="meal-name">
+                        {meal.name ?? "Без названия"}
+                      </span>
+                      <div className="meal-macros">
+                        <span>{macro(meal.cal, "ккал")}</span>
+                        <span>Б: {macro(meal.protein, "г")}</span>
+                        <span>Ж: {macro(meal.fat, "г")}</span>
+                        <span>У: {macro(meal.carbohydrate, "г")}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
 
-            {isCreate && mealDrafts.length < MAX_POST_MEALS && (
+            {draft.editing && draft.mealDrafts.length < MAX_POST_MEALS && (
               <button
                 className="meal-add-card"
                 type="button"
-                onClick={addMealDraft}
+                onClick={() => draft.addMealDraft()}
               >
                 <span className="meal-add-icon">+</span>
                 Добавить мил
@@ -451,7 +289,7 @@ export function PostModal({
           </div>
         </div>
 
-        {error && <p className="error">{error}</p>}
+        {draft.error && <p className="error">{draft.error}</p>}
 
         <div className="post-modal-actions">
           {isCreate ? (
@@ -459,48 +297,52 @@ export function PostModal({
               <button
                 className="button"
                 type="button"
-                disabled={pending}
-                onClick={handleCreate}
+                disabled={draft.pending}
+                onClick={() => draft.handleCreate(onClose)}
               >
-                {pending ? "Создание…" : "Создать"}
+                {draft.pending ? "Создание…" : "Создать"}
               </button>
               <button
                 className="button button-secondary"
                 type="button"
-                disabled={pending}
+                disabled={draft.pending}
                 onClick={requestClose}
               >
                 Отмена
               </button>
             </>
-          ) : editing ? (
+          ) : draft.editing ? (
             <>
               <button
                 className="button"
                 type="button"
-                disabled={pending}
-                onClick={handleUpdate}
+                disabled={draft.pending}
+                onClick={() => draft.handleUpdate()}
               >
-                {pending ? "Сохранение…" : "Сохранить"}
+                {draft.pending ? "Сохранение…" : "Сохранить"}
               </button>
               <button
                 className="button button-secondary"
                 type="button"
-                disabled={pending}
-                onClick={cancelEdit}
+                disabled={draft.pending}
+                onClick={() => draft.beginCancelEdit()}
               >
                 Отмена
               </button>
             </>
           ) : (
             <>
-              <button className="button" type="button" onClick={startEdit}>
+              <button
+                className="button"
+                type="button"
+                onClick={() => draft.startEdit()}
+              >
                 Редактировать
               </button>
               <button
                 className="button button-secondary"
                 type="button"
-                onClick={() => setConfirmingDelete(true)}
+                onClick={() => draft.requestDelete()}
               >
                 Удалить
               </button>
@@ -509,27 +351,42 @@ export function PostModal({
         </div>
       </div>
 
-      {confirmingDelete && (
+      {draft.confirmingDelete && (
         <ConfirmDialog
           message="Удалить этот пост? Это действие нельзя отменить."
           confirmLabel="Да, удалить"
           pendingLabel="Удаление…"
-          pending={pending}
-          onConfirm={handleDelete}
-          onCancel={() => setConfirmingDelete(false)}
+          pending={draft.pending}
+          onConfirm={() => draft.handleDelete(onClose)}
+          onCancel={() => draft.dismissDelete()}
         />
       )}
 
-      {confirmingClose && (
+      {draft.confirmingClose && (
         <ConfirmDialog
-          message="Закрыть без сохранения? Пост не будет создан, а введённые данные пропадут."
+          message={
+            isCreate
+              ? "Закрыть без сохранения? Пост не будет создан, а введённые данные пропадут."
+              : "Закрыть без сохранения? Внесённые изменения пропадут."
+          }
           confirmLabel="Да, закрыть"
           pendingLabel="Закрытие…"
-          pending={pending}
+          pending={draft.pending}
           onConfirm={onClose}
-          onCancel={() => setConfirmingClose(false)}
+          onCancel={() => draft.dismissClose()}
+        />
+      )}
+
+      {draft.confirmingCancelEdit && (
+        <ConfirmDialog
+          message="Закрыть без сохранения? Внесённые изменения пропадут."
+          confirmLabel="Да, закрыть"
+          pendingLabel="Закрытие…"
+          pending={draft.pending}
+          onConfirm={() => draft.cancelEdit()}
+          onCancel={() => draft.dismissCancelEdit()}
         />
       )}
     </Modal>
   );
-}
+});

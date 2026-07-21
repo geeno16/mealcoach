@@ -6,6 +6,7 @@ from src.notification.model import NotificationType
 from src.notification.repository import NotificationRepository
 from src.notification.schema import NotificationWrite
 from src.picture.repository import PictureRepository
+from src.post.model import Meal
 from src.post.repository import PostRepository
 from src.post.schema import (
     MAX_POST_MEALS,
@@ -110,6 +111,15 @@ class PostService:
 
         await assert_can_view(self.user_repo, post.auth_id, current)
 
+        if not MIN_POST_MEALS <= len(data.meals) <= MAX_POST_MEALS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"A post must contain between {MIN_POST_MEALS} "
+                    f"and {MAX_POST_MEALS} meals"
+                ),
+            )
+
         owner_id = post.auth_id
         graded_by_coach = owner_id != current.id
 
@@ -119,12 +129,37 @@ class PostService:
         assert post is not None
 
         if not graded_by_coach:
-            for meal, meal_data in zip(
-                post.meals, data.meals, strict=False
-            ):
-                for key, value in meal_data.model_dump().items():
-                    setattr(meal, key, value)
+            existing_by_id = {meal.id: meal for meal in post.meals}
+            kept_ids: set[int] = set()
+
+            for meal_data in data.meals:
+                fields = meal_data.model_dump(exclude={"id"})
+                meal_id = meal_data.id
+                if meal_id is not None and meal_id in existing_by_id:
+                    existing = existing_by_id[meal_id]
+                    for key, value in fields.items():
+                        setattr(existing, key, value)
+                    kept_ids.add(meal_id)
+                else:
+                    post.meals.append(Meal(**fields))
+
+            removed_meals = [
+                meal
+                for meal in existing_by_id.values()
+                if meal.id not in kept_ids
+            ]
+            removed_picture_ids = [
+                meal.picture_id
+                for meal in removed_meals
+                if meal.picture_id is not None
+            ]
+            for meal in removed_meals:
+                post.meals.remove(meal)
+
             await self.session.commit()
+
+            for picture_id in removed_picture_ids:
+                await self.picture_repo.delete_by_id(picture_id)
 
         if graded_by_coach:
             await self.notif_repo.create(

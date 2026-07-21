@@ -8,6 +8,7 @@ from src.user import UserRepository, UserWrite
 from test.helpers import (
     create_post,
     delete_post,
+    get_picture,
     get_post,
     get_posts,
     login,
@@ -188,7 +189,11 @@ async def test_update_post_put_owner(async_client, auth, post):
             description="Updated description",
             comment="Own comment",
             mark=4,
-            meals=[MealWrite(name="Updated meal", cal=100)],
+            meals=[
+                MealWrite(
+                    id=post.meals[0].id, name="Updated meal", cal=100
+                )
+            ],
         ),
         async_client,
     )
@@ -227,8 +232,16 @@ async def test_update_post_put_owner_multi_meal(
             auth_id=auth.id,
             name="Multi",
             meals=[
-                MealWrite(name="First updated", cal=150),
-                MealWrite(name="Second updated", cal=250),
+                MealWrite(
+                    id=multi_post.meals[0].id,
+                    name="First updated",
+                    cal=150,
+                ),
+                MealWrite(
+                    id=multi_post.meals[1].id,
+                    name="Second updated",
+                    cal=250,
+                ),
             ],
         ),
         async_client,
@@ -258,13 +271,109 @@ async def test_update_post_put_owner_preserves_picture(
         PostWrite(
             auth_id=auth.id,
             name=post.name,
-            meals=[MealWrite(name="Renamed", cal=100)],
+            meals=[MealWrite(id=meal.id, name="Renamed", cal=100)],
         ),
         async_client,
     )
     assert response.status_code == 200
     assert response.json()["meals"][0]["name"] == "Renamed"
     assert response.json()["meals"][0]["picture_id"] == picture.id
+
+
+@pytest.mark.asyncio
+async def test_update_post_put_owner_add_meal(async_client, auth, post):
+    await login(auth.email, auth.password, async_client)
+    response = await update_post(
+        post.id,
+        PostWrite(
+            auth_id=auth.id,
+            name=post.name,
+            meals=[
+                MealWrite(id=post.meals[0].id, name="Egg", cal=100),
+                MealWrite(name="Toast", cal=80),
+            ],
+        ),
+        async_client,
+    )
+    assert response.status_code == 200
+    meals = response.json()["meals"]
+    assert len(meals) == 2
+    assert meals[0]["id"] == post.meals[0].id
+    assert meals[1]["name"] == "Toast"
+    assert meals[1]["cal"] == 80
+    assert isinstance(meals[1]["id"], int)
+    assert meals[1]["id"] != post.meals[0].id
+
+
+@pytest.mark.asyncio
+async def test_update_post_put_owner_remove_meal(
+    async_client, auth, user: UserWrite, db_session: AsyncSession
+):
+    await UserRepository(db_session).create(user)
+    repo = PostRepository(db_session)
+    multi_post = await repo.create(
+        PostWrite(
+            auth_id=auth.id,
+            name="Multi",
+            meals=[
+                MealWrite(name="First", cal=100),
+                MealWrite(name="Second", cal=200),
+            ],
+        )
+    )
+    picture = await PictureRepository(db_session).create(
+        PictureWrite(data=b"\xff\xd8\xff\xe0-fake-jpeg-bytes")
+    )
+    removed_meal = multi_post.meals[1]
+    removed_meal.picture_id = picture.id
+    await db_session.commit()
+
+    await login(auth.email, auth.password, async_client)
+    response = await update_post(
+        multi_post.id,
+        PostWrite(
+            auth_id=auth.id,
+            name="Multi",
+            meals=[
+                MealWrite(
+                    id=multi_post.meals[0].id, name="First", cal=100
+                )
+            ],
+        ),
+        async_client,
+    )
+    assert response.status_code == 200
+    meals = response.json()["meals"]
+    assert len(meals) == 1
+    assert meals[0]["id"] == multi_post.meals[0].id
+
+    picture_response = await get_picture(picture.id, async_client)
+    assert picture_response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_post_put_meals_boundaries(
+    async_client, auth, post
+):
+    await login(auth.email, auth.password, async_client)
+
+    response = await update_post(
+        post.id,
+        PostWrite(auth_id=auth.id, name=post.name, meals=[]),
+        async_client,
+    )
+    assert response.status_code == 400
+
+    response = await update_post(
+        post.id,
+        PostWrite(
+            auth_id=auth.id,
+            name=post.name,
+            meals=[MealWrite(name=f"Meal {i}") for i in range(4)],
+        ),
+        async_client,
+    )
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio
