@@ -66,6 +66,7 @@ export const PostsPage = observer(function PostsPage() {
   const { session, posts } = useStore();
   const user = session.user;
   const [openId, setOpenId] = useState<number | null>(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (user) void posts.load(user.auth_id);
@@ -78,7 +79,18 @@ export const PostsPage = observer(function PostsPage() {
 
   return (
     <div className="page">
-      <h1>Посты</h1>
+      <div className="page-header">
+        <h1>Посты</h1>
+        {user.role === "trainee" && (
+          <button
+            className="button"
+            type="button"
+            onClick={() => setCreating(true)}
+          >
+            Создать пост
+          </button>
+        )}
+      </div>
 
       {posts.error && <p className="error">{posts.error}</p>}
 
@@ -99,6 +111,8 @@ export const PostsPage = observer(function PostsPage() {
       {openPost && (
         <PostModal post={openPost} onClose={() => setOpenId(null)} />
       )}
+
+      {creating && <PostModal post={null} onClose={() => setCreating(false)} />}
     </div>
   );
 });

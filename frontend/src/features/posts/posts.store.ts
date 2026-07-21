@@ -34,6 +34,14 @@ export class PostsStore {
     );
   }
 
+  async createPost(data: PostWrite): Promise<PostRead> {
+    const created = await postsApi.createPost(data);
+    runInAction(() => {
+      this.items = [created, ...this.items];
+    });
+    return created;
+  }
+
   async updatePost(id: number, data: PostWrite): Promise<PostRead> {
     const updated = await postsApi.updatePost(id, data);
     runInAction(() => {
