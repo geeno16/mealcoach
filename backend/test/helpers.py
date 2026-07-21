@@ -158,8 +158,10 @@ async def get_statistics(id: int, async_client):
     return await async_client.get(f"/api/users/{id}/statistics")
 
 
-async def get_picture(id: int, async_client):
-    return await async_client.get(f"/api/pictures/{id}")
+async def get_picture(id: int, async_client, headers=None):
+    return await async_client.get(
+        f"/api/pictures/{id}", headers=headers
+    )
 
 
 _JPEG_HEADERS = {"Content-Type": "image/jpeg"}

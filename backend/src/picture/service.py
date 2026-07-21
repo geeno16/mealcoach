@@ -51,7 +51,7 @@ class PictureService:
 
     async def get_picture_get(
         self, id: int, current: CurrentAuth
-    ) -> bytes:
+    ) -> Picture:
         picture = await self._get_picture_or_404(id)
         owner_auth_id = await self._resolve_owner_auth_id(id)
         if owner_auth_id is None:
@@ -60,7 +60,7 @@ class PictureService:
                 detail="Picture not found",
             )
         await assert_can_view(self.user_repo, owner_auth_id, current)
-        return picture.data
+        return picture
 
     async def set_avatar(
         self, user_id: int, data: bytes, current: CurrentAuth

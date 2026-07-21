@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -185,6 +187,37 @@ async def test_get_picture_get_negative(
     await login(team[1].auth.email, team[1].auth.password, async_client)
     response = await get_picture(-1, async_client)
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_picture_get_cache_headers(
+    async_client, team, db_session, meal_picture
+):
+    await login(team[1].auth.email, team[1].auth.password, async_client)
+    response = await get_picture(meal_picture.id, async_client)
+    assert response.status_code == 200
+    assert "max-age" in response.headers["cache-control"]
+    etag = response.headers["etag"]
+    assert etag
+
+    response = await get_picture(
+        meal_picture.id,
+        async_client,
+        headers={"If-None-Match": etag},
+    )
+    assert response.status_code == 304
+    assert response.content == b""
+
+    meal_picture.updated_at += timedelta(seconds=1)
+    await db_session.commit()
+
+    response = await get_picture(
+        meal_picture.id,
+        async_client,
+        headers={"If-None-Match": etag},
+    )
+    assert response.status_code == 200
+    assert response.headers["etag"] != etag
 
 
 @pytest.mark.asyncio

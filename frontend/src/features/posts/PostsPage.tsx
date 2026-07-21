@@ -95,7 +95,7 @@ export const PostsPage = observer(function PostsPage() {
 
       {posts.error && <p className="error">{posts.error}</p>}
 
-      {posts.loading ? (
+      {posts.loading && posts.items.length === 0 ? (
         <Loader />
       ) : posts.items.length === 0 ? (
         <p className="hint">Постов пока нет</p>

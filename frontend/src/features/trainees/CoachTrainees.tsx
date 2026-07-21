@@ -6,7 +6,7 @@ import { Loader } from "../../shared/Loader";
 export const CoachTrainees = observer(function CoachTrainees() {
   const { coach } = useStore();
 
-  if (coach.loading) {
+  if (coach.loading && coach.trainees.length === 0) {
     return <Loader />;
   }
 

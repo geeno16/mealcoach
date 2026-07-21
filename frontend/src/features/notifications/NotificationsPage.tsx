@@ -41,7 +41,7 @@ export const NotificationsPage = observer(function NotificationsPage() {
 
         {notifications.error && <p className="error">{notifications.error}</p>}
 
-        {notifications.loading ? (
+        {notifications.loading && notifications.items.length === 0 ? (
           <Loader />
         ) : notifications.items.length === 0 ? (
           <p className="hint">Уведомлений нет</p>
