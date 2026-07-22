@@ -108,18 +108,13 @@
 
 .post-modal {
   display: flex;
-  flex: 1;
   flex-direction: column;
   gap: 10px;
-  min-height: 0;
 }
 
 .post-modal-meals {
   display: flex;
-  flex: 1;
   flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
 }
 
 .post-modal-actions {

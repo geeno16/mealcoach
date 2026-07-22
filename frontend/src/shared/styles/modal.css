@@ -2,11 +2,12 @@
   display: flex;
   position: fixed;
   justify-content: center;
-  align-items: center;
+  align-items: safe center;
   z-index: 100;
   inset: 0;
   background: rgb(0 0 0 / 50%);
   padding: 16px;
+  overflow-y: auto;
 }
 
 .modal-box {
@@ -18,8 +19,6 @@
   padding: 24px;
   width: 100%;
   max-width: 640px;
-  max-height: 90vh;
-  overflow: hidden;
 }
 
 .modal-close {

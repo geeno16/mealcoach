@@ -1,3 +1,4 @@
+import { Pencil, Save, Trash2 } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 
@@ -300,6 +301,7 @@ export const PostModal = observer(function PostModal({
                 disabled={draft.pending}
                 onClick={() => draft.handleCreate(onClose)}
               >
+                <Save size={16} />
                 {draft.pending ? "Создание…" : "Создать"}
               </button>
               <button
@@ -319,6 +321,7 @@ export const PostModal = observer(function PostModal({
                 disabled={draft.pending}
                 onClick={() => draft.handleUpdate()}
               >
+                <Save size={16} />
                 {draft.pending ? "Сохранение…" : "Сохранить"}
               </button>
               <button
@@ -337,6 +340,7 @@ export const PostModal = observer(function PostModal({
                 type="button"
                 onClick={() => draft.startEdit()}
               >
+                <Pencil size={16} />
                 Редактировать
               </button>
               <button
@@ -344,6 +348,7 @@ export const PostModal = observer(function PostModal({
                 type="button"
                 onClick={() => draft.requestDelete()}
               >
+                <Trash2 size={16} />
                 Удалить
               </button>
             </>

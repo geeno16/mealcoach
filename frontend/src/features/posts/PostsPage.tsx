@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
@@ -88,6 +89,7 @@ export const PostsPage = observer(function PostsPage() {
             type="button"
             onClick={() => setCreating(true)}
           >
+            <Plus size={16} />
             Создать пост
           </button>
         )}

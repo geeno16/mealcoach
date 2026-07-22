@@ -1,3 +1,4 @@
+import { Check, X } from "lucide-react";
 import { useEffect, type ReactNode, type MouseEvent } from "react";
 
 export function Modal({
@@ -78,6 +79,7 @@ export function ConfirmDialog({
             disabled={pending}
             onClick={onConfirm}
           >
+            <Check size={16} />
             {pending ? pendingLabel : confirmLabel}
           </button>
           <button
@@ -86,6 +88,7 @@ export function ConfirmDialog({
             disabled={pending}
             onClick={onCancel}
           >
+            <X size={16} />
             Отмена
           </button>
         </div>

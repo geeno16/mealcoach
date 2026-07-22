@@ -11,6 +11,7 @@
     "gen:api": "node settings/gen-api.mjs && prettier --write src/api/schema.gen.ts --config settings/prettier.config.cjs"
   },
   "dependencies": {
+    "lucide-react": "^1.25.0",
     "mobx": "^6.13.7",
     "mobx-react-lite": "^4.1.0",
     "openapi-fetch": "^0.13.0",
