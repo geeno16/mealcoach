@@ -4,9 +4,11 @@ import { useEffect, type ReactNode, type MouseEvent } from "react";
 export function Modal({
   onClose,
   children,
+  className,
 }: {
   onClose: () => void;
   children: ReactNode;
+  className?: string;
 }) {
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -26,7 +28,10 @@ export function Modal({
   const stop = (e: MouseEvent) => e.stopPropagation();
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div
+      className={className ? `modal-backdrop ${className}` : "modal-backdrop"}
+      onClick={onClose}
+    >
       <div className="modal-box" onClick={stop}>
         <button
           className="modal-close"

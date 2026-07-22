@@ -34,6 +34,32 @@
   line-height: 1;
 }
 
+.photo-viewer-backdrop {
+  z-index: 300;
+  background: rgb(0 0 0 / 85%);
+}
+
+.photo-viewer-backdrop .modal-box {
+  background: none;
+  padding: 0;
+  width: auto;
+  max-width: 90vw;
+}
+
+.photo-viewer-backdrop .modal-close {
+  top: -32px;
+  right: 0;
+  color: #fff;
+}
+
+.photo-viewer-img {
+  display: block;
+  border-radius: var(--radius-lg);
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+}
+
 .confirm-backdrop {
   display: flex;
   position: fixed;

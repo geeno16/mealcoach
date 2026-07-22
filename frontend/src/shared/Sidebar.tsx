@@ -35,7 +35,7 @@ export const Sidebar = observer(function Sidebar() {
           }
         >
           <item.icon className="nav-link-icon" size={18} />
-          {item.label}
+          <span className="nav-link-label">{item.label}</span>
         </NavLink>
       ))}
     </nav>

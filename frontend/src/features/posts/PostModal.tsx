@@ -1,4 +1,4 @@
-import { Image, Pencil, Save, Trash2 } from "lucide-react";
+import { Eye, Image, Pencil, Save, Trash2 } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 
@@ -52,8 +52,34 @@ function MealPhoto({
     </div>
   );
 
+  const [viewerOpen, setViewerOpen] = useState(false);
+
   if (!editable) {
-    return <div className="meal-thumb-wrap">{content}</div>;
+    if (!src) {
+      return <div className="meal-thumb-wrap">{content}</div>;
+    }
+    return (
+      <>
+        <button
+          className="meal-thumb-wrap meal-thumb-viewable"
+          type="button"
+          onClick={() => setViewerOpen(true)}
+        >
+          {content}
+          <span className="meal-thumb-overlay">
+            <Eye size={20} />
+          </span>
+        </button>
+        {viewerOpen && (
+          <Modal
+            className="photo-viewer-backdrop"
+            onClose={() => setViewerOpen(false)}
+          >
+            <img className="photo-viewer-img" src={src} alt="" />
+          </Modal>
+        )}
+      </>
+    );
   }
 
   return (

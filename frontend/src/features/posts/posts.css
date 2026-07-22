@@ -283,6 +283,17 @@
   cursor: pointer;
 }
 
+.meal-thumb-viewable {
+  display: block;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  width: 100%;
+  font: inherit;
+  text-align: inherit;
+}
+
 .meal-thumb-overlay {
   display: flex;
   position: absolute;
@@ -296,7 +307,8 @@
   color: #fff;
 }
 
-.meal-thumb-editable:hover .meal-thumb-overlay {
+.meal-thumb-editable:hover .meal-thumb-overlay,
+.meal-thumb-viewable:hover .meal-thumb-overlay {
   opacity: 1;
 }
 
