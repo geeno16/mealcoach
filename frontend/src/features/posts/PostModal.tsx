@@ -1,4 +1,4 @@
-import { Pencil, Save, Trash2 } from "lucide-react";
+import { Image, Pencil, Save, Trash2 } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 
@@ -38,33 +38,41 @@ function MealPhoto({
     previewSrc ??
     (hasPicture ? pictureUrl(meal.picture_id!, meal.id) : undefined);
 
-  return (
-    <div className="meal-thumb-wrap">
-      {src && (
-        <img
-          className="meal-thumb"
-          src={src}
-          alt=""
-          loading="lazy"
-          decoding="async"
-        />
-      )}
-      {editable && (
-        <label className="meal-photo-btn">
-          {src ? "Заменить фото" : "Добавить фото"}
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) onSelectFile(file);
-              e.target.value = "";
-            }}
-          />
-        </label>
-      )}
+  const content = src ? (
+    <img
+      className="meal-thumb"
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+    />
+  ) : (
+    <div className="meal-thumb-placeholder">
+      <Image size={28} />
     </div>
+  );
+
+  if (!editable) {
+    return <div className="meal-thumb-wrap">{content}</div>;
+  }
+
+  return (
+    <label className="meal-thumb-wrap meal-thumb-editable">
+      {content}
+      <span className="meal-thumb-overlay">
+        <Pencil size={20} />
+      </span>
+      <input
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onSelectFile(file);
+          e.target.value = "";
+        }}
+      />
+    </label>
   );
 }
 

@@ -255,25 +255,49 @@
 }
 
 .meal-thumb-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  position: relative;
   width: 100%;
 }
 
 .meal-thumb {
+  display: block;
   border-radius: var(--radius);
   width: 100%;
   height: 120px;
   object-fit: cover;
 }
 
-.meal-photo-btn {
+.meal-thumb-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--radius);
+  background: var(--color-hover);
+  width: 100%;
+  height: 120px;
+  color: var(--color-text-muted);
+}
+
+.meal-thumb-editable {
+  display: block;
   cursor: pointer;
-  color: var(--color-primary);
-  font-size: 10px;
-  text-align: center;
+}
+
+.meal-thumb-overlay {
+  display: flex;
+  position: absolute;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  inset: 0;
+  border-radius: var(--radius);
+  background: rgb(90 90 90 / 55%);
+  color: #fff;
+}
+
+.meal-thumb-editable:hover .meal-thumb-overlay {
+  opacity: 1;
 }
 
 .meal-info {
