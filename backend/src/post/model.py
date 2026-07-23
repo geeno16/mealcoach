@@ -4,6 +4,7 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.common import Base
+from src.picture.model import Picture
 
 
 class Post(Base):
@@ -53,3 +54,14 @@ class Meal(Base):
     carbohydrate: Mapped[int | None] = mapped_column(nullable=True)
 
     post: Mapped["Post"] = relationship(back_populates="meals")
+    picture: Mapped[Picture | None] = relationship(
+        lazy="selectin", viewonly=True
+    )
+
+    @property
+    def picture_width(self) -> int | None:
+        return self.picture.width if self.picture else None
+
+    @property
+    def picture_height(self) -> int | None:
+        return self.picture.height if self.picture else None

@@ -1,4 +1,7 @@
+import io
+
 from fastapi import HTTPException, status
+from PIL import Image, UnidentifiedImageError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.schema import CurrentAuth
@@ -24,6 +27,16 @@ class PictureService:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied",
         )
+
+    def _build_picture_write(self, data: bytes) -> PictureWrite:
+        try:
+            width, height = Image.open(io.BytesIO(data)).size
+        except UnidentifiedImageError as error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Uploaded file is not a valid image",
+            ) from error
+        return PictureWrite(data=data, width=width, height=height)
 
     async def _get_picture_or_404(self, id: int) -> Picture:
         picture = await self.repo.get_by_id(id)
@@ -74,7 +87,9 @@ class PictureService:
                 detail="User not found",
             )
         old_picture_id = current_user.picture_id
-        picture = await self.repo.create(PictureWrite(data=data))
+        picture = await self.repo.create(
+            self._build_picture_write(data)
+        )
         current_user.picture_id = picture.id
         await self.user_repo.update_by_id(
             current.id,
@@ -106,13 +121,15 @@ class PictureService:
 
         if meal.picture_id is not None:
             await self.repo.update_by_id(
-                meal.picture_id, PictureWrite(data=data)
+                meal.picture_id, self._build_picture_write(data)
             )
             picture = await self.repo.get_by_id(meal.picture_id)
             assert picture is not None
             return picture
 
-        picture = await self.repo.create(PictureWrite(data=data))
+        picture = await self.repo.create(
+            self._build_picture_write(data)
+        )
         meal.picture_id = picture.id
         await self.session.commit()
         return picture

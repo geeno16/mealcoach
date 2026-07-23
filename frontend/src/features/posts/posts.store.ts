@@ -70,7 +70,14 @@ export class PostsStore {
         return {
           ...p,
           meals: p.meals?.map((m) =>
-            m.id === mealId ? { ...m, picture_id: picture.id } : m,
+            m.id === mealId
+              ? {
+                  ...m,
+                  picture_id: picture.id,
+                  picture_width: picture.width,
+                  picture_height: picture.height,
+                }
+              : m,
           ),
         };
       });

@@ -40,9 +40,11 @@ MEAL
     fat: int                    (nullable)
     carbohydrate: int           (nullable)
 
-PICTURE 
+PICTURE
     id: int                     (PK)
     data: bytes                 (not null)
+    width: int                  (not null)
+    height: int                 (not null)
     updated_at: datetime        (not null, auto)
     created_at: datetime        (not null, auto)
 

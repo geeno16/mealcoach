@@ -433,7 +433,11 @@ async def upgrade(session: AsyncSession) -> None:
     for i, post in enumerate(posts):
         if i % 3 == 2:
             continue
-        picture = Picture(data=_solid_png(320, 320, _photo_color(i)))
+        picture = Picture(
+            data=_solid_png(320, 320, _photo_color(i)),
+            width=320,
+            height=320,
+        )
         session.add(picture)
         await session.flush()
         post.meals[0].picture_id = picture.id

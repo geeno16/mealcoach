@@ -1,7 +1,9 @@
+import io
 from datetime import timedelta
 
 import pytest
 import pytest_asyncio
+from PIL import Image
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.picture import Picture, PictureRepository, PictureWrite
@@ -22,14 +24,29 @@ from test.helpers import (
     set_meal_picture,
 )
 
-IMAGE = b"\xff\xd8\xff\xe0-fake-jpeg-bytes"
-NEW_IMAGE = b"\xff\xd8\xff\xe0-updated-bytes"
+
+def _png_bytes(width: int, height: int) -> bytes:
+    buffer = io.BytesIO()
+    Image.new("RGB", (width, height), (200, 100, 50)).save(
+        buffer, format="PNG"
+    )
+    return buffer.getvalue()
+
+
+IMAGE_WIDTH = 100
+IMAGE_HEIGHT = 80
+NEW_IMAGE_WIDTH = 64
+NEW_IMAGE_HEIGHT = 48
+
+IMAGE = _png_bytes(IMAGE_WIDTH, IMAGE_HEIGHT)
+NEW_IMAGE = _png_bytes(NEW_IMAGE_WIDTH, NEW_IMAGE_HEIGHT)
+NOT_AN_IMAGE = b"not-an-image"
 
 
 async def _set_avatar(db_session: AsyncSession, auth_id: int):
     user_repo = UserRepository(db_session)
     picture = await PictureRepository(db_session).create(
-        PictureWrite(data=IMAGE)
+        PictureWrite(data=IMAGE, width=IMAGE_WIDTH, height=IMAGE_HEIGHT)
     )
     user = await user_repo.get_by_id(auth_id)
     assert user is not None
@@ -43,7 +60,7 @@ async def _set_avatar(db_session: AsyncSession, auth_id: int):
 async def _set_meal_picture(db_session: AsyncSession, meal_id: int):
     meal_repo = MealRepository(db_session)
     picture = await PictureRepository(db_session).create(
-        PictureWrite(data=IMAGE)
+        PictureWrite(data=IMAGE, width=IMAGE_WIDTH, height=IMAGE_HEIGHT)
     )
     meal = await meal_repo.get_by_id(meal_id)
     assert meal is not None
@@ -95,7 +112,10 @@ async def test_set_avatar_positive(async_client, trainee):
     await login(trainee.email, trainee.password, async_client)
     response = await set_avatar(trainee.id, IMAGE, async_client)
     assert response.status_code == 200
-    assert isinstance(response.json()["id"], int)
+    body = response.json()
+    assert isinstance(body["id"], int)
+    assert body["width"] == IMAGE_WIDTH
+    assert body["height"] == IMAGE_HEIGHT
 
 
 @pytest.mark.asyncio
@@ -108,14 +128,21 @@ async def test_set_avatar_negative(async_client, trainee, team):
     response = await set_avatar(trainee.id, IMAGE, async_client)
     assert response.status_code == 403
 
+    await login(trainee.email, trainee.password, async_client)
+    response = await set_avatar(trainee.id, NOT_AN_IMAGE, async_client)
+    assert response.status_code == 400
+
 
 @pytest.mark.asyncio
 async def test_set_meal_picture_positive(async_client, team, meal):
     await login(team[1].auth.email, team[1].auth.password, async_client)
     response = await set_meal_picture(meal.id, IMAGE, async_client)
     assert response.status_code == 200
-    picture_id = response.json()["id"]
+    body = response.json()
+    picture_id = body["id"]
     assert isinstance(picture_id, int)
+    assert body["width"] == IMAGE_WIDTH
+    assert body["height"] == IMAGE_HEIGHT
 
     response = await get_picture(picture_id, async_client)
     assert response.status_code == 200
@@ -123,7 +150,10 @@ async def test_set_meal_picture_positive(async_client, team, meal):
 
     response = await set_meal_picture(meal.id, NEW_IMAGE, async_client)
     assert response.status_code == 200
-    assert response.json()["id"] == picture_id
+    body = response.json()
+    assert body["id"] == picture_id
+    assert body["width"] == NEW_IMAGE_WIDTH
+    assert body["height"] == NEW_IMAGE_HEIGHT
 
     response = await get_picture(picture_id, async_client)
     assert response.content == NEW_IMAGE
@@ -142,6 +172,11 @@ async def test_set_meal_picture_negative(async_client, team, meal):
     await login(team[1].auth.email, team[1].auth.password, async_client)
     response = await set_meal_picture(-1, IMAGE, async_client)
     assert response.status_code == 404
+
+    response = await set_meal_picture(
+        meal.id, NOT_AN_IMAGE, async_client
+    )
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio

@@ -25,6 +25,8 @@ class MealWrite(MealBase):
 class MealRead(MealBase):
     id: int
     picture_id: int | None = None
+    picture_width: int | None = None
+    picture_height: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

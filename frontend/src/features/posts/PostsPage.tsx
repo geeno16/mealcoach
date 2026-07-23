@@ -38,6 +38,8 @@ const PostCard = observer(function PostCard({
           <img
             src={posts.pictureUrl(pictureMeal.picture_id!, pictureMeal.id)}
             alt=""
+            width={pictureMeal.picture_width ?? undefined}
+            height={pictureMeal.picture_height ?? undefined}
             loading="lazy"
             decoding="async"
           />

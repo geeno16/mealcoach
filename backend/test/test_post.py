@@ -259,7 +259,11 @@ async def test_update_post_put_owner_preserves_picture(
     async_client, auth, post, db_session: AsyncSession
 ):
     picture = await PictureRepository(db_session).create(
-        PictureWrite(data=b"\xff\xd8\xff\xe0-fake-jpeg-bytes")
+        PictureWrite(
+            data=b"\xff\xd8\xff\xe0-fake-jpeg-bytes",
+            width=10,
+            height=10,
+        )
     )
     meal = post.meals[0]
     meal.picture_id = picture.id
@@ -276,8 +280,11 @@ async def test_update_post_put_owner_preserves_picture(
         async_client,
     )
     assert response.status_code == 200
-    assert response.json()["meals"][0]["name"] == "Renamed"
-    assert response.json()["meals"][0]["picture_id"] == picture.id
+    meal_body = response.json()["meals"][0]
+    assert meal_body["name"] == "Renamed"
+    assert meal_body["picture_id"] == picture.id
+    assert meal_body["picture_width"] == 10
+    assert meal_body["picture_height"] == 10
 
 
 @pytest.mark.asyncio
@@ -322,7 +329,11 @@ async def test_update_post_put_owner_remove_meal(
         )
     )
     picture = await PictureRepository(db_session).create(
-        PictureWrite(data=b"\xff\xd8\xff\xe0-fake-jpeg-bytes")
+        PictureWrite(
+            data=b"\xff\xd8\xff\xe0-fake-jpeg-bytes",
+            width=10,
+            height=10,
+        )
     )
     removed_meal = multi_post.meals[1]
     removed_meal.picture_id = picture.id
